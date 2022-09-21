@@ -5,10 +5,8 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.stream.io.StreamUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,8 +161,8 @@ public class NGSIUtils {
             String keyOne = keysOneLevel.next();
             if (("Property".equals(attrType) && "unitCode".equals(keyOne))) {
                 if (value.get(keyOne) instanceof String)
-                    subAttributes.add(new AttributesLD(keyOne, "Property", "", "", "", "", value.getString(keyOne), false, null));
-                else subAttributes.add(new AttributesLD(keyOne, "Property", "", "", "", "", null, false, null));
+                    subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", value.getString(keyOne), false, null));
+                else subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", null, false, null));
 
             } else if ("RelationshipDetails".contains(keyOne)) {
                 JSONObject relation = value.getJSONObject(keyOne);
@@ -206,7 +204,7 @@ public class NGSIUtils {
             }
         }
 
-        return new AttributesLD(key, attrType, datasetId, observedAt, createdAt, modifiedAt, attrValue, !subAttributes.isEmpty(), subAttributes);
+        return new AttributesLD(key.toLowerCase(), attrType, datasetId, observedAt, createdAt, modifiedAt, attrValue, !subAttributes.isEmpty(), subAttributes);
     }
 
     private AttributesLD parseNgsiLdSubAttribute(String key, JSONObject value) {
@@ -220,6 +218,6 @@ public class NGSIUtils {
             subAttrValue = value.get("value").toString();
         }
 
-        return new AttributesLD(key, subAttrType, "", "", "", "", subAttrValue, false, null);
+        return new AttributesLD(key.toLowerCase(), subAttrType, "", "", "", "", subAttrValue, false, null);
     }
 }

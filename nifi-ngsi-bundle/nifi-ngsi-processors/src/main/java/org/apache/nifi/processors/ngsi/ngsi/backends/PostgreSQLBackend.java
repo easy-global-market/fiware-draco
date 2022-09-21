@@ -1,5 +1,6 @@
 package org.apache.nifi.processors.ngsi.ngsi.backends;
 
+import org.apache.commons.math3.util.Pair;
 import org.apache.nifi.processors.ngsi.ngsi.utils.*;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Attributes;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Entity;
@@ -81,11 +82,10 @@ public class PostgreSQLBackend {
                         String encodedSubAttrName = encodeSubAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), subAttrName, datasetIdPrefixToTruncate);
                         if ("observedAt".equals(subAttrName))
                             aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
-                        else if (subAttribute.getAttrValue() instanceof Number){
+                        else if (subAttribute.getAttrValue() instanceof Number) {
                             if (aggregation.replace(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
                                 aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
-                        }
-                        else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
+                        } else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                         logger.debug("Added subattribute {} ({}) to attribute {}", encodedSubAttrName, subAttrName, attrName);
                     }
                 }
@@ -96,18 +96,18 @@ public class PostgreSQLBackend {
 
     private String encodeAttributeToColumnName(String attributeName, String datasetId, String datasetIdPrefixToTruncate) {
         String encodedName = NGSIEncoders.encodePostgreSQL(attributeName) + (!datasetId.equals("") ? "_" + NGSIEncoders.encodePostgreSQL(datasetId.replaceFirst(datasetIdPrefixToTruncate, "")) : "");
-        return NGSIEncoders.truncateToMaxSize(encodedName);
+        return NGSIEncoders.truncateToMaxSize(encodedName).toLowerCase();
     }
 
     private String encodeTimePropertyToColumnName(String encodedAttributeName, String timeProperty) {
         String encodedName = encodedAttributeName + "_" + NGSIEncoders.encodePostgreSQL(timeProperty);
-        return NGSIEncoders.truncateToMaxSize(encodedName);
+        return NGSIEncoders.truncateToMaxSize(encodedName).toLowerCase();
     }
 
     private String encodeSubAttributeToColumnName(String attributeName, String datasetId, String subAttributeName, String datasetIdPrefixToTruncate) {
         String encodedAttributeName = encodeAttributeToColumnName(attributeName, datasetId, datasetIdPrefixToTruncate);
         String encodedName = encodedAttributeName + "_" + NGSIEncoders.encodePostgreSQL(subAttributeName);
-        return NGSIEncoders.truncateToMaxSize(encodedName);
+        return NGSIEncoders.truncateToMaxSize(encodedName).toLowerCase();
     }
 
     public List<String> getValuesForInsert(String attrPersistence, Entity entity, Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields, long creationTime, String fiwareServicePath, String ngsiVersion, boolean ckanCompatible, String datasetIdPrefixToTruncate) {
@@ -230,11 +230,10 @@ public class PostgreSQLBackend {
         String encodedAttributeName = encodeAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), datasetIdPrefixToTruncate);
         valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
 
-        if (!attribute.getObservedAt().equals("")){
+        if (!attribute.getObservedAt().equals("")) {
             String encodedObservedAt = encodeTimePropertyToColumnName(encodedAttributeName, NGSIConstants.OBSERVED_AT);
             valuesForColumns.put(encodedObservedAt, formatFieldForValueInsert(attribute.getObservedAt(), listOfFields.get(encodedObservedAt)));
-        }
-        else {
+        } else {
             String encodedCreatedAt = encodeTimePropertyToColumnName(encodedAttributeName, NGSIConstants.CREATED_AT);
             if (attribute.createdAt == null || attribute.createdAt.equals("") || ZonedDateTime.parse(attribute.createdAt).toEpochSecond() > ZonedDateTime.parse(oldestTimeStamp).toEpochSecond()) {
                 valuesForColumns.put(encodedCreatedAt, formatFieldForValueInsert(oldestTimeStamp, listOfFields.get(encodedCreatedAt)));
@@ -257,12 +256,12 @@ public class PostgreSQLBackend {
         return valuesForColumns;
     }
 
-
     private String formatFieldForValueInsert(Object attributeValue, POSTGRESQL_COLUMN_TYPES columnType) {
         String formattedField;
         switch (columnType) {
             case NUMERIC:
-                if (attributeValue != null && (attributeValue instanceof Number)) formattedField = attributeValue.toString();
+                if (attributeValue != null && attributeValue instanceof Number)
+                    formattedField = attributeValue.toString();
                 else formattedField = null;
                 break;
             case TIMESTAMPTZ:
@@ -428,6 +427,38 @@ public class PostgreSQLBackend {
 
     public String checkColumnNames(String tableName) {
         return "select column_name from information_schema.columns where table_name ='" + tableName + "';";
+    }
+
+    public String checkColumnDataType(String tableName) {
+        return "select column_name, data_type from information_schema.columns where table_name ='" + tableName + "';";
+    }
+
+    public Map<String, POSTGRESQL_COLUMN_TYPES> getNewListOfFields(ResultSet rs, Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields) {
+        // create an initial map containing all the fields with columns names in lowercase
+        Map<String, POSTGRESQL_COLUMN_TYPES> newFields = listOfFields;
+
+        try {
+            // Get the column names; column indices start from 1
+            while (rs.next()) {
+                Pair<String, POSTGRESQL_COLUMN_TYPES> columnNameWithDataType;
+                if (rs.getString(2).equals("timestamp with time zone")) {
+                    columnNameWithDataType = new Pair(rs.getString(1), POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
+                } else {
+                    columnNameWithDataType = new Pair(rs.getString(1), POSTGRESQL_COLUMN_TYPES.valueOf(rs.getString(2).toUpperCase()));
+                }
+                if (newFields.containsKey(columnNameWithDataType.getFirst()) && newFields.get(columnNameWithDataType.getFirst()) != columnNameWithDataType.getSecond()) {
+                    logger.debug("Looking at column {} with type {} (already exists with type {})",
+                            columnNameWithDataType.getFirst(),
+                            newFields.get(columnNameWithDataType.getFirst()),
+                            columnNameWithDataType.getSecond()
+                    );
+                    newFields.replace(columnNameWithDataType.getFirst(), columnNameWithDataType.getSecond());
+                }
+            }
+        } catch (SQLException s) {
+            logger.error("Error while inspecting columns: {}", s.getMessage(), s);
+        }
+        return newFields;
     }
 
     public Map<String, POSTGRESQL_COLUMN_TYPES> getNewColumns(ResultSet rs, Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields) {
