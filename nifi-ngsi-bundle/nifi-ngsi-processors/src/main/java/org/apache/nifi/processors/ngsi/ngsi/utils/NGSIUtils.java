@@ -5,8 +5,10 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.stream.io.StreamUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

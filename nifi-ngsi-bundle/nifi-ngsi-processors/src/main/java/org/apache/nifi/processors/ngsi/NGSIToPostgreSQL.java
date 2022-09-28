@@ -290,8 +290,8 @@ public class NGSIToPostgreSQL extends AbstractSessionFactoryProcessor {
                                     context.getProperty(DATASETID_PREFIX_TRUNCATE).getValue()
                             );
 
-                    ResultSet columnDataType = conn.createStatement().executeQuery(postgres.checkColumnDataType(tableName));
-                    Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = postgres.getNewListOfFields(columnDataType, listOfFields);
+                    ResultSet columnDataType = conn.createStatement().executeQuery(postgres.getColumnsTypesQuery(tableName));
+                    Map<String, POSTGRESQL_COLUMN_TYPES> updatedListOfTypedFields = postgres.getUpdatedListOfTypedFields(columnDataType, listOfFields);
 
                     final String sql =
                             postgres.insertQuery(
@@ -300,7 +300,7 @@ public class NGSIToPostgreSQL extends AbstractSessionFactoryProcessor {
                                     fiwareServicePath,
                                     schemaName,
                                     tableName,
-                                    newListOfFields,
+                                    updatedListOfTypedFields,
                                     context.getProperty(ATTR_PERSISTENCE).getValue(),
                                     context.getProperty(NGSI_VERSION).getValue(),
                                     context.getProperty(CKAN_COMPATIBILITY).asBoolean(),
@@ -321,10 +321,10 @@ public class NGSIToPostgreSQL extends AbstractSessionFactoryProcessor {
                         try {
                             getLogger().info("Gonna create schema {}", schemaName);
                             conn.createStatement().execute(postgres.createSchema(schemaName));
-                            getLogger().info("Gonna create table {} with columns {}", tableName, newListOfFields);
-                            conn.createStatement().execute(postgres.createTable(schemaName, tableName, newListOfFields));
+                            getLogger().info("Gonna create table {} with columns {}", tableName, updatedListOfTypedFields);
+                            conn.createStatement().execute(postgres.createTable(schemaName, tableName, updatedListOfTypedFields));
                             ResultSet rs = conn.createStatement().executeQuery(postgres.checkColumnNames(tableName));
-                            Map<String, POSTGRESQL_COLUMN_TYPES> newColumns = postgres.getNewColumns(rs, newListOfFields);
+                            Map<String, POSTGRESQL_COLUMN_TYPES> newColumns = postgres.getNewColumns(rs, updatedListOfTypedFields);
                             if (newColumns.size() > 0) {
                                 getLogger().info("Identified new columns to create: {}", newColumns);
                                 conn.createStatement().execute(postgres.addColumns(schemaName, tableName, newColumns));

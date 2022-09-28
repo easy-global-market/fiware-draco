@@ -871,7 +871,7 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
         Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields = new TreeMap<>();
         listOfFields.put("temperature", POSTGRESQL_COLUMN_TYPES.TEXT);
 
-        Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = backend.getNewListOfFields(resultSetMock, listOfFields);
+        Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
 
 
         assertTrue(newListOfFields != listOfFields);
