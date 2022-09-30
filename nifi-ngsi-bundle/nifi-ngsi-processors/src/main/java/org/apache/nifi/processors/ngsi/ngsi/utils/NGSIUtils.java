@@ -150,7 +150,7 @@ public class NGSIUtils {
         } else if ("Property".contentEquals(attrType)) {
             attrValue = value.get("value");
         } else if ("GeoProperty".contentEquals(attrType)) {
-            attrValue = value.getJSONObject("value").get("coordinates").toString();
+            attrValue = value.getJSONObject("value").getString("type");
         } else if("".contentEquals(attrType)){
             attrType = null;
             attrValue = null;
@@ -166,7 +166,14 @@ public class NGSIUtils {
                 if (value.get(keyOne) instanceof String)
                     subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", value.getString(keyOne), false, null));
                 else subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", null, false, null));
-
+            } else if ("GeoProperty".equals(attrType) && "value".equals(keyOne)) {
+                if(attrValue.equals("Point")) {
+                    String [] location = value.getJSONObject("value").get("coordinates").toString().replaceAll("\\[", "").replaceAll("\\]", "").split(",");
+                    subAttributes.add(new AttributesLD("lon", "GeoProperty", "", "", "", "", Double.parseDouble(location[0]), false, null));
+                    subAttributes.add(new AttributesLD("lat", "GeoProperty", "", "", "", "", Double.parseDouble(location[1]), false, null));
+                } else {
+                    subAttributes.add(new AttributesLD("geometry", "GeoProperty", "", "", "", "", value.getJSONObject("value"), false, null));
+                }
             } else if ("RelationshipDetails".contains(keyOne)) {
                 JSONObject relation = value.getJSONObject(keyOne);
                 relation.remove("id");

@@ -5,6 +5,7 @@ import org.apache.nifi.processors.ngsi.ngsi.utils.*;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Attributes;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Entity;
 import org.apache.nifi.processors.ngsi.ngsi.utils.NGSIConstants.POSTGRESQL_COLUMN_TYPES;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
@@ -85,8 +86,9 @@ public class PostgreSQLBackend {
                         else if (subAttribute.getAttrValue() instanceof Number){
                             if (aggregation.replace(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
                                 aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
-                        }
-                        else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
+                        } else if(subAttribute.getAttrValue() instanceof JSONObject){
+                            aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
+                        } else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                         logger.debug("Added subattribute {} ({}) to attribute {}", encodedSubAttrName, subAttrName, attrName);
                     }
                 }
@@ -270,6 +272,10 @@ public class PostgreSQLBackend {
                 if (attributeValue != null) formattedField = "'" + attributeValue + "'";
                 else formattedField = null;
                 break;
+            case GEOMETRY:
+
+                formattedField = "ST_GeomFromGeoJSON('" + attributeValue + "')";
+                break;
             default:
                 if (attributeValue != null) formattedField = "$$" + attributeValue + "$$";
                 else formattedField = null;
@@ -432,24 +438,17 @@ public class PostgreSQLBackend {
     }
 
     public String getColumnsTypesQuery(String tableName) {
-        return "select column_name, data_type from information_schema.columns where table_name ='" + tableName + "';";
+        return "select column_name, udt_name from information_schema.columns where table_name ='" + tableName + "';";
     }
 
     public Map<String, POSTGRESQL_COLUMN_TYPES> getUpdatedListOfTypedFields(ResultSet rs, Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields) {
         // create an initial map containing all the fields with columns names in lowercase
         Map<String, POSTGRESQL_COLUMN_TYPES> newFields = listOfFields;
-
         try {
             // Get the column names; column indices start from 1
             while (rs.next()) {
-                Pair<String, POSTGRESQL_COLUMN_TYPES> columnNameWithDataType;
-                if (rs.getString(2).equals("timestamp with time zone")) {
-                    columnNameWithDataType =
-                            new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
-                } else {
-                    columnNameWithDataType =
-                            new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.valueOf(rs.getString(2).toUpperCase()));
-                }
+                Pair<String, POSTGRESQL_COLUMN_TYPES> columnNameWithDataType =
+                        new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.valueOf(rs.getString(2).toUpperCase()));
                 if (newFields.containsKey(columnNameWithDataType.getFirst()) &&
                         newFields.get(columnNameWithDataType.getFirst()) != columnNameWithDataType.getSecond()) {
                     logger.info("Column {} with type {} already existed with a different type {}",

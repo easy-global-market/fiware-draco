@@ -63,7 +63,8 @@ public final class NGSIConstants {
     public static enum POSTGRESQL_COLUMN_TYPES {
         TEXT,
         TIMESTAMPTZ,
-        NUMERIC
+        NUMERIC,
+        GEOMETRY
     }
 
     public static final String OBSERVED_AT = "observedAt";
