@@ -150,12 +150,7 @@ public class NGSIUtils {
         } else if ("Property".contentEquals(attrType)) {
             attrValue = value.get("value");
         } else if ("GeoProperty".contentEquals(attrType)) {
-            if(value.getJSONObject("value").getString("type").equals("Point")){
-                attrValue = value.getJSONObject("value").get("coordinates");
-            } else {
-                attrValue = value.getJSONObject("value");
-
-            }
+            attrValue = value;
         } else if("".contentEquals(attrType)){
             attrType = null;
             attrValue = null;
