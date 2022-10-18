@@ -72,11 +72,12 @@ public class PostgreSQLBackend {
                         aggregation.putIfAbsent(encodedGeopropertyLon, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                         aggregation.putIfAbsent(encodedGeopropertyLat, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                     }
+                    String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
                     String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
-                    String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
-                    aggregation.putIfAbsent(encodedGeoJson, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
-                    aggregation.putIfAbsent(encodedFeatureGeoProperties, POSTGRESQL_COLUMN_TYPES.TEXT);
-                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TEXT);
+                    String encodedLocation = attrName;
+                    aggregation.putIfAbsent(encodedGeometry, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
+                    aggregation.putIfAbsent(encodedGeoJson, POSTGRESQL_COLUMN_TYPES.TEXT);
+                    aggregation.putIfAbsent(encodedLocation, POSTGRESQL_COLUMN_TYPES.TEXT);
                 } else aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                 logger.debug("Added {} in the list of fields for entity {}", attrName, entity.entityId);
 
@@ -255,14 +256,17 @@ public class PostgreSQLBackend {
                 valuesForColumns.put(encodedGeopropertyLon, formatFieldForValueInsert(location.getDouble(0), listOfFields.get(encodedGeopropertyLon)));
                 valuesForColumns.put(encodedGeopropertyLat, formatFieldForValueInsert(location.getDouble(1), listOfFields.get(encodedGeopropertyLat)));
             }
-            JSONObject featureObject = new JSONObject();
-            featureObject.put("type", "Feature");
-            featureObject.put("geometry", geometryObject);
+            JSONObject geoJson = new JSONObject();
+            geoJson.put("type", "Feature");
+            geoJson.put("geometry", geometryObject);
+
+            String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
             String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
-            String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
-            valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeoJson)));
-            valuesForColumns.put(encodedFeatureGeoProperties, formatFieldForValueInsert(featureObject, listOfFields.get(encodedFeatureGeoProperties)));
-            valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(location, listOfFields.get(encodedAttributeName)));
+            String encodedLocation = encodedAttributeName;
+
+            valuesForColumns.put(encodedGeometry, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeometry)));
+            valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geoJson, listOfFields.get(encodedGeoJson)));
+            valuesForColumns.put(encodedLocation, formatFieldForValueInsert(location, listOfFields.get(encodedLocation)));
         }
         else {
             valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
