@@ -72,7 +72,7 @@ public class PostgreSQLBackend {
                         aggregation.putIfAbsent(encodedGeopropertyLon, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                         aggregation.putIfAbsent(encodedGeopropertyLat, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                     }
-                    String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+                    String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
                     String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
                     aggregation.putIfAbsent(encodedGeoJson, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
                     aggregation.putIfAbsent(encodedFeatureGeoProperties, POSTGRESQL_COLUMN_TYPES.TEXT);
@@ -258,7 +258,7 @@ public class PostgreSQLBackend {
             JSONObject featureObject = new JSONObject();
             featureObject.put("type", "Feature");
             featureObject.put("geometry", geometryObject);
-            String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+            String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
             String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
             valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeoJson)));
             valuesForColumns.put(encodedFeatureGeoProperties, formatFieldForValueInsert(featureObject, listOfFields.get(encodedFeatureGeoProperties)));
