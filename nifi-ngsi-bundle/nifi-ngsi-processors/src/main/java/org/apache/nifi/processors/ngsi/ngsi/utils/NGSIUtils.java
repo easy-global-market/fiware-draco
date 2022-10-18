@@ -166,6 +166,7 @@ public class NGSIUtils {
                 if (value.get(keyOne) instanceof String)
                     subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", value.getString(keyOne), false, null));
                 else subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", null, false, null));
+
             } else if ("RelationshipDetails".contains(keyOne)) {
                 JSONObject relation = value.getJSONObject(keyOne);
                 relation.remove("id");

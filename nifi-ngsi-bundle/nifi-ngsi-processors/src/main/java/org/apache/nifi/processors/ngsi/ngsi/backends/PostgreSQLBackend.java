@@ -9,7 +9,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -64,7 +63,7 @@ public class PostgreSQLBackend {
                 String attrName = encodeAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), datasetIdPrefixToTruncate);
                 if (attribute.getAttrValue() instanceof Number) {
                     if (aggregation.replace(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
-                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
+                        aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                 } else if ("GeoProperty".equals(attribute.getAttrType())) {
                     JSONObject geometryObject = (JSONObject) attribute.getAttrValue();
                     if (geometryObject.getJSONObject("value").getString("type").equals("Point")) {
@@ -73,10 +72,11 @@ public class PostgreSQLBackend {
                         aggregation.putIfAbsent(encodedGeopropertyLon, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                         aggregation.putIfAbsent(encodedGeopropertyLat, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                     }
-                    String encodedGeometryGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+                    String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
                     String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
-                    aggregation.putIfAbsent(encodedGeometryGeoProperties, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
+                    aggregation.putIfAbsent(encodedGeoJson, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
                     aggregation.putIfAbsent(encodedFeatureGeoProperties, POSTGRESQL_COLUMN_TYPES.TEXT);
+                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                 } else aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                 logger.debug("Added {} in the list of fields for entity {}", attrName, entity.entityId);
 
@@ -97,10 +97,11 @@ public class PostgreSQLBackend {
                         String encodedSubAttrName = encodeSubAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), subAttrName, datasetIdPrefixToTruncate);
                         if ("observedAt".equals(subAttrName))
                             aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
-                        else if (subAttribute.getAttrValue() instanceof Number) {
+                        else if (subAttribute.getAttrValue() instanceof Number){
                             if (aggregation.replace(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
                                 aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
-                        } else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
+                        }
+                        else aggregation.putIfAbsent(encodedSubAttrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                         logger.debug("Added subattribute {} ({}) to attribute {}", encodedSubAttrName, subAttrName, attrName);
                     }
                 }
@@ -246,21 +247,22 @@ public class PostgreSQLBackend {
 
         if ("GeoProperty".equals(attribute.getAttrType())) {
             JSONObject geometryObject = (JSONObject) attribute.getAttrValue();
+            JSONArray location = (JSONArray) geometryObject.getJSONObject("value").get("coordinates");
             if (geometryObject.getJSONObject("value").getString("type").equals("Point")) {
                 String encodedGeopropertyLon = encodeAttributeToColumnName(attribute.getAttrName(), "lon", datasetIdPrefixToTruncate);
                 String encodedGeopropertyLat = encodeAttributeToColumnName(attribute.getAttrName(), "lat", datasetIdPrefixToTruncate);
 
-                JSONArray location = (JSONArray) geometryObject.getJSONObject("value").get("coordinates");
                 valuesForColumns.put(encodedGeopropertyLon, formatFieldForValueInsert(location.getDouble(0), listOfFields.get(encodedGeopropertyLon)));
                 valuesForColumns.put(encodedGeopropertyLat, formatFieldForValueInsert(location.getDouble(1), listOfFields.get(encodedGeopropertyLat)));
             }
             JSONObject featureObject = new JSONObject();
             featureObject.put("type", "Feature");
             featureObject.put("geometry", geometryObject);
-            String encodedGeometryGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+            String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
             String encodedFeatureGeoProperties = encodeAttributeToColumnName(attribute.getAttrName(), "feature", datasetIdPrefixToTruncate);
-            valuesForColumns.put(encodedGeometryGeoProperties, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeometryGeoProperties)));
+            valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeoJson)));
             valuesForColumns.put(encodedFeatureGeoProperties, formatFieldForValueInsert(featureObject, listOfFields.get(encodedFeatureGeoProperties)));
+            valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(location, listOfFields.get(encodedAttributeName)));
         }
         else {
             valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
@@ -297,8 +299,7 @@ public class PostgreSQLBackend {
         String formattedField;
         switch (columnType) {
             case NUMERIC:
-                if (attributeValue != null && (attributeValue instanceof Number))
-                    formattedField = attributeValue.toString();
+                if (attributeValue != null && (attributeValue instanceof Number)) formattedField = attributeValue.toString();
                 else formattedField = null;
                 break;
             case TIMESTAMPTZ:
