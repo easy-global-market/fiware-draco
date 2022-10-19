@@ -151,7 +151,7 @@ public class NGSIUtils {
         } else if ("Property".contentEquals(attrType)) {
             attrValue = value.get("value");
         } else if ("GeoProperty".contentEquals(attrType)) {
-            attrValue = value.getJSONObject("value").get("coordinates").toString();
+            attrValue = value;
         } else if("".contentEquals(attrType)){
             attrType = null;
             attrValue = null;

@@ -5,6 +5,8 @@ import org.apache.nifi.processors.ngsi.ngsi.utils.*;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Attributes;
 import org.apache.nifi.processors.ngsi.ngsi.utils.Entity;
 import org.apache.nifi.processors.ngsi.ngsi.utils.NGSIConstants.POSTGRESQL_COLUMN_TYPES;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
@@ -62,6 +64,20 @@ public class PostgreSQLBackend {
                 if (attribute.getAttrValue() instanceof Number) {
                     if (aggregation.replace(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
                         aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
+                } else if ("GeoProperty".equals(attribute.getAttrType())) {
+                    JSONObject geometryObject = (JSONObject) attribute.getAttrValue();
+                    if (geometryObject.getJSONObject("value").getString("type").equals("Point")) {
+                        String encodedGeopropertyLon = encodeAttributeToColumnName(attribute.getAttrName(), "lon", datasetIdPrefixToTruncate);
+                        String encodedGeopropertyLat = encodeAttributeToColumnName(attribute.getAttrName(), "lat", datasetIdPrefixToTruncate);
+                        aggregation.putIfAbsent(encodedGeopropertyLon, POSTGRESQL_COLUMN_TYPES.NUMERIC);
+                        aggregation.putIfAbsent(encodedGeopropertyLat, POSTGRESQL_COLUMN_TYPES.NUMERIC);
+                    }
+                    String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+                    String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
+                    String encodedLocation = attrName;
+                    aggregation.putIfAbsent(encodedGeometry, POSTGRESQL_COLUMN_TYPES.GEOMETRY);
+                    aggregation.putIfAbsent(encodedGeoJson, POSTGRESQL_COLUMN_TYPES.TEXT);
+                    aggregation.putIfAbsent(encodedLocation, POSTGRESQL_COLUMN_TYPES.TEXT);
                 } else aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TEXT);
                 logger.debug("Added {} in the list of fields for entity {}", attrName, entity.entityId);
 
@@ -229,13 +245,37 @@ public class PostgreSQLBackend {
         valuesForColumns.put(NGSIConstants.ENTITY_TYPE, "'" + entity.getEntityType() + "'");
 
         String encodedAttributeName = encodeAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), datasetIdPrefixToTruncate);
-        valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
 
-        if (!attribute.getObservedAt().equals("")){
-            String encodedObservedAt = encodeTimePropertyToColumnName(encodedAttributeName, NGSIConstants.OBSERVED_AT);
-            valuesForColumns.put(encodedObservedAt, formatFieldForValueInsert(attribute.getObservedAt(), listOfFields.get(encodedObservedAt)));
+        if ("GeoProperty".equals(attribute.getAttrType())) {
+            JSONObject geometryObject = (JSONObject) attribute.getAttrValue();
+            JSONArray location = (JSONArray) geometryObject.getJSONObject("value").get("coordinates");
+            if (geometryObject.getJSONObject("value").getString("type").equals("Point")) {
+                String encodedGeopropertyLon = encodeAttributeToColumnName(attribute.getAttrName(), "lon", datasetIdPrefixToTruncate);
+                String encodedGeopropertyLat = encodeAttributeToColumnName(attribute.getAttrName(), "lat", datasetIdPrefixToTruncate);
+
+                valuesForColumns.put(encodedGeopropertyLon, formatFieldForValueInsert(location.getDouble(0), listOfFields.get(encodedGeopropertyLon)));
+                valuesForColumns.put(encodedGeopropertyLat, formatFieldForValueInsert(location.getDouble(1), listOfFields.get(encodedGeopropertyLat)));
+            }
+            JSONObject geoJson = new JSONObject();
+            geoJson.put("type", "Feature");
+            geoJson.put("geometry", geometryObject);
+
+            String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
+            String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
+            String encodedLocation = encodedAttributeName;
+
+            valuesForColumns.put(encodedGeometry, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeometry)));
+            valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geoJson, listOfFields.get(encodedGeoJson)));
+            valuesForColumns.put(encodedLocation, formatFieldForValueInsert(location, listOfFields.get(encodedLocation)));
         }
         else {
+            valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
+        }
+
+        if (!attribute.getObservedAt().equals("")) {
+            String encodedObservedAt = encodeTimePropertyToColumnName(encodedAttributeName, NGSIConstants.OBSERVED_AT);
+            valuesForColumns.put(encodedObservedAt, formatFieldForValueInsert(attribute.getObservedAt(), listOfFields.get(encodedObservedAt)));
+        } else {
             String encodedCreatedAt = encodeTimePropertyToColumnName(encodedAttributeName, NGSIConstants.CREATED_AT);
             if (attribute.createdAt == null || attribute.createdAt.equals("") || ZonedDateTime.parse(attribute.createdAt).toEpochSecond() > ZonedDateTime.parse(oldestTimeStamp).toEpochSecond()) {
                 valuesForColumns.put(encodedCreatedAt, formatFieldForValueInsert(oldestTimeStamp, listOfFields.get(encodedCreatedAt)));
@@ -269,6 +309,9 @@ public class PostgreSQLBackend {
             case TIMESTAMPTZ:
                 if (attributeValue != null) formattedField = "'" + attributeValue + "'";
                 else formattedField = null;
+                break;
+            case GEOMETRY:
+                formattedField = "ST_GeomFromGeoJSON('" + attributeValue + "')";
                 break;
             default:
                 if (attributeValue != null) formattedField = "$$" + attributeValue + "$$";
@@ -432,24 +475,17 @@ public class PostgreSQLBackend {
     }
 
     public String getColumnsTypesQuery(String tableName) {
-        return "select column_name, data_type from information_schema.columns where table_name ='" + tableName + "';";
+        return "select column_name, udt_name from information_schema.columns where table_name ='" + tableName + "';";
     }
 
     public Map<String, POSTGRESQL_COLUMN_TYPES> getUpdatedListOfTypedFields(ResultSet rs, Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields) {
         // create an initial map containing all the fields with columns names in lowercase
         Map<String, POSTGRESQL_COLUMN_TYPES> newFields = listOfFields;
-
         try {
             // Get the column names; column indices start from 1
             while (rs.next()) {
-                Pair<String, POSTGRESQL_COLUMN_TYPES> columnNameWithDataType;
-                if (rs.getString(2).equals("timestamp with time zone")) {
-                    columnNameWithDataType =
-                            new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
-                } else {
-                    columnNameWithDataType =
-                            new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.valueOf(rs.getString(2).toUpperCase()));
-                }
+                Pair<String, POSTGRESQL_COLUMN_TYPES> columnNameWithDataType =
+                        new Pair<>(rs.getString(1), POSTGRESQL_COLUMN_TYPES.valueOf(rs.getString(2).toUpperCase()));
                 if (newFields.containsKey(columnNameWithDataType.getFirst()) &&
                         newFields.get(columnNameWithDataType.getFirst()) != columnNameWithDataType.getSecond()) {
                     logger.info("Column {} with type {} already existed with a different type {}",
