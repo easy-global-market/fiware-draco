@@ -63,6 +63,8 @@ public final class NGSIConstants {
     public static enum POSTGRESQL_COLUMN_TYPES {
         TEXT,
         TIMESTAMPTZ,
+        TIMETZ,
+        DATE,
         NUMERIC,
         GEOMETRY
     }

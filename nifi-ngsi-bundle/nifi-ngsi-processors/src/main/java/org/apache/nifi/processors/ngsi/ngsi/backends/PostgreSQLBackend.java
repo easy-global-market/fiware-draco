@@ -9,13 +9,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -61,7 +61,13 @@ public class PostgreSQLBackend {
             attributesByObservedAt.forEach((timestamp, attributesLd) -> attributesLDS.addAll(attributesLd));
             for (AttributesLD attribute : attributesLDS) {
                 String attrName = encodeAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), datasetIdPrefixToTruncate);
-                if (attribute.getAttrValue() instanceof Number) {
+                if (isValidDate(attribute.getAttrValue().toString()))
+                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.DATE);
+                else if (isValidTime(attribute.getAttrValue().toString()))
+                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TIMETZ);
+                else if (isValidDateTime(attribute.getAttrValue().toString()))
+                    aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.TIMESTAMPTZ);
+                else if (attribute.getAttrValue() instanceof Number) {
                     if (aggregation.replace(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC) == null)
                         aggregation.putIfAbsent(attrName, POSTGRESQL_COLUMN_TYPES.NUMERIC);
                 } else if ("GeoProperty".equals(attribute.getAttrType())) {
@@ -307,6 +313,8 @@ public class PostgreSQLBackend {
                 else formattedField = null;
                 break;
             case TIMESTAMPTZ:
+            case DATE:
+            case TIMETZ:
                 if (attributeValue != null) formattedField = "'" + attributeValue + "'";
                 else formattedField = null;
                 break;
@@ -541,5 +549,32 @@ public class PostgreSQLBackend {
         fieldsForCreate += ";";
 
         return "Alter table " + schemaName + "." + tableName + fieldsForCreate;
+    }
+
+    private boolean isValidDate(String date) {
+        try {
+            DateTimeFormatter.ISO_DATE.parse(date);
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isValidTime(String time) {
+        try {
+            DateTimeFormatter.ISO_TIME.parse(time);
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isValidDateTime(String dateTime) {
+        try {
+            DateTimeFormatter.ISO_DATE_TIME.parse(dateTime);
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+        return true;
     }
 }
