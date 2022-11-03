@@ -264,6 +264,11 @@ public class PostgreSQLBackend {
             }
             JSONObject geoJson = new JSONObject();
             geoJson.put("type", "Feature");
+            // to be correctly rendered, viz tools often require a properties object into the geometry object
+            // so add one containing the entity id (only thing common to all entities)
+            JSONObject geoJsonProperties = new JSONObject();
+            geoJsonProperties.put(NGSIConstants.ENTITY_ID, entity.entityId);
+            geometryObject.put("properties", geoJsonProperties);
             geoJson.put("geometry", geometryObject);
 
             String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
