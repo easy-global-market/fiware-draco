@@ -34,6 +34,18 @@
       "type" : "Property",
       "value" : "test 01"
     },
+    "date" : {
+      "type" : "Property",
+      "value" : "2020-10-29"
+    },
+    "time" : {
+      "type" : "Property",
+      "value" : "09:00:00Z"
+    },
+    "dateTime" : {
+    "type" : "Property",
+    "value" : "2020-10-29T09:00:00Z"
+  },
     "temperature" : [ {
       "type" : "Property",
       "value" : 16,
