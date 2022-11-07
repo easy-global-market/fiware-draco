@@ -107,11 +107,11 @@ public class NGSIUtils {
                         for (int j = 0; j < values.length(); j++) {
                             JSONObject value = values.getJSONObject(j);
                             AttributesLD attributesLD = parseNgsiLdAttribute(key, value);
-                            attributes.add(attributesLD);
+                            if (attributesLD.getAttrValue() !=null && attributesLD.getAttrValue().toString() != "null") attributes.add(attributesLD);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD attributesLD = parseNgsiLdAttribute(key, (JSONObject) object);
-                        attributes.add(attributesLD);
+                        if (attributesLD.getAttrValue() !=null && attributesLD.getAttrValue().toString() != "null") attributes.add(attributesLD);
                     } else {
                         logger.warn("Attribute {} has unexpected value type: {}", key, object.getClass());
                     }
@@ -149,7 +149,7 @@ public class NGSIUtils {
         if ("Relationship".contentEquals(attrType)) {
             attrValue = value.get("object").toString();
         } else if ("Property".contentEquals(attrType)) {
-            attrValue = value.get("value");
+            attrValue = value.opt("value");
         } else if ("GeoProperty".contentEquals(attrType)) {
             attrValue = value;
         } else if("".contentEquals(attrType)){
@@ -166,7 +166,6 @@ public class NGSIUtils {
             if (("Property".equals(attrType) && "unitCode".equals(keyOne))) {
                 if (value.get(keyOne) instanceof String)
                     subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", value.getString(keyOne), false, null));
-                else subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", null, false, null));
 
             } else if ("RelationshipDetails".contains(keyOne)) {
                 JSONObject relation = value.getJSONObject(keyOne);
@@ -181,11 +180,11 @@ public class NGSIUtils {
                         for (int j = 0; j < valuesArray.length(); j++) {
                             JSONObject valueObject = valuesArray.getJSONObject(j);
                             AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, valueObject);
-                            subAttributes.add(subAttribute);
+                            if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, (JSONObject) object);
-                        subAttributes.add(subAttribute);
+                        if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
                     } else {
                         logger.warn("Sub Attribute {} has unexpected value type: {}", relationKey, object.getClass());
                     }
@@ -197,11 +196,11 @@ public class NGSIUtils {
                     for (int j = 0; j < valuesArray.length(); j++) {
                         JSONObject valueObject = valuesArray.getJSONObject(j);
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, valueObject);
-                        subAttributes.add(subAttribute);
+                        if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
                     }
                 } else if (object instanceof JSONObject) {
                     AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, value.getJSONObject(keyOne));
-                    subAttributes.add(subAttribute);
+                    if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
                 } else {
                     logger.warn("Sub Attribute {} has unexpected value type: {}", keyOne, object.getClass());
                 }
