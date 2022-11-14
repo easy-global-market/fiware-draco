@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnit4.class)
 public class TestNGSIUtils {
@@ -45,4 +46,18 @@ public class TestNGSIUtils {
         Map<String, List<AttributesLD>> attributesByObservedAt = attributes.stream().collect(Collectors.groupingBy(attrs -> attrs.observedAt));
         assertEquals(3, attributesByObservedAt.size());
     }
+
+    @Test
+    public void verifyIfAttributesAreCompliant() throws IOException {
+        String data = readFromInputStream(inputStream);
+        ArrayList<Entity> entities = ngsiUtils.parseNgsiLdEntities(new JSONArray(data));
+        assertTrue(
+                entities.stream().allMatch(
+                        entity -> entity.entityAttrsLD.stream().allMatch(
+                                attributes ->  attributes.attrName != "nullValue" && attributes.attrName != "nullAttribute"
+                                )
+                )
+        );
+    }
+
 }

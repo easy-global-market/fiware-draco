@@ -107,11 +107,11 @@ public class NGSIUtils {
                         for (int j = 0; j < values.length(); j++) {
                             JSONObject value = values.getJSONObject(j);
                             AttributesLD attributesLD = parseNgsiLdAttribute(key, value);
-                            if (attributesLD.getAttrValue() !=null && attributesLD.getAttrValue().toString() != "null") attributes.add(attributesLD);
+                            addAttributesIfCheked(attributes, attributesLD);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD attributesLD = parseNgsiLdAttribute(key, (JSONObject) object);
-                        if (attributesLD.getAttrValue() !=null && attributesLD.getAttrValue().toString() != "null") attributes.add(attributesLD);
+                        addAttributesIfCheked(attributes, attributesLD);
                     } else {
                         logger.warn("Attribute {} has unexpected value type: {}", key, object.getClass());
                     }
@@ -180,11 +180,11 @@ public class NGSIUtils {
                         for (int j = 0; j < valuesArray.length(); j++) {
                             JSONObject valueObject = valuesArray.getJSONObject(j);
                             AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, valueObject);
-                            if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
+                            addAttributesIfCheked(subAttributes, subAttribute);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, (JSONObject) object);
-                        if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
+                        addAttributesIfCheked(subAttributes, subAttribute);
                     } else {
                         logger.warn("Sub Attribute {} has unexpected value type: {}", relationKey, object.getClass());
                     }
@@ -196,11 +196,11 @@ public class NGSIUtils {
                     for (int j = 0; j < valuesArray.length(); j++) {
                         JSONObject valueObject = valuesArray.getJSONObject(j);
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, valueObject);
-                        if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
+                        addAttributesIfCheked(subAttributes, subAttribute);
                     }
                 } else if (object instanceof JSONObject) {
                     AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, value.getJSONObject(keyOne));
-                    if (subAttribute.getAttrValue() != null && subAttribute.getAttrValue().toString() != "null") subAttributes.add(subAttribute);
+                    addAttributesIfCheked(subAttributes, subAttribute);
                 } else {
                     logger.warn("Sub Attribute {} has unexpected value type: {}", keyOne, object.getClass());
                 }
@@ -222,5 +222,12 @@ public class NGSIUtils {
         }
 
         return new AttributesLD(key.toLowerCase(), subAttrType, "", "", "", "", subAttrValue, false, null);
+    }
+
+    //In NGSI-LD, we can't have a property with a null value or a null attribute
+    // So we do not add the attribute if it contains a null value or attribute is null
+    private void addAttributesIfCheked(ArrayList<AttributesLD> attributesLd, AttributesLD attributeLD) {
+        if (attributeLD.getAttrValue() !=null && attributeLD.getAttrValue().toString() != "null")
+            attributesLd.add(attributeLD);
     }
 }
