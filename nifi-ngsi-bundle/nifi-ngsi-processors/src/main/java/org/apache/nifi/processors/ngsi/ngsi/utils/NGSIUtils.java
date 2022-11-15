@@ -107,11 +107,11 @@ public class NGSIUtils {
                         for (int j = 0; j < values.length(); j++) {
                             JSONObject value = values.getJSONObject(j);
                             AttributesLD attributesLD = parseNgsiLdAttribute(key, value);
-                            addAttributesIfValid(attributes, attributesLD);
+                            addAttributeIfValid(attributes, attributesLD);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD attributesLD = parseNgsiLdAttribute(key, (JSONObject) object);
-                        addAttributesIfValid(attributes, attributesLD);
+                        addAttributeIfValid(attributes, attributesLD);
                     } else {
                         logger.warn("Attribute {} has unexpected value type: {}", key, object.getClass());
                     }
@@ -180,11 +180,11 @@ public class NGSIUtils {
                         for (int j = 0; j < valuesArray.length(); j++) {
                             JSONObject valueObject = valuesArray.getJSONObject(j);
                             AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, valueObject);
-                            addAttributesIfValid(subAttributes, subAttribute);
+                            addAttributeIfValid(subAttributes, subAttribute);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, (JSONObject) object);
-                        addAttributesIfValid(subAttributes, subAttribute);
+                        addAttributeIfValid(subAttributes, subAttribute);
                     } else {
                         logger.warn("Sub Attribute {} has unexpected value type: {}", relationKey, object.getClass());
                     }
@@ -196,11 +196,11 @@ public class NGSIUtils {
                     for (int j = 0; j < valuesArray.length(); j++) {
                         JSONObject valueObject = valuesArray.getJSONObject(j);
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, valueObject);
-                        addAttributesIfValid(subAttributes, subAttribute);
+                        addAttributeIfValid(subAttributes, subAttribute);
                     }
                 } else if (object instanceof JSONObject) {
                     AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, value.getJSONObject(keyOne));
-                    addAttributesIfValid(subAttributes, subAttribute);
+                    addAttributeIfValid(subAttributes, subAttribute);
                 } else {
                     logger.warn("Sub Attribute {} has unexpected value type: {}", keyOne, object.getClass());
                 }
@@ -224,12 +224,11 @@ public class NGSIUtils {
         return new AttributesLD(key.toLowerCase(), subAttrType, "", "", "", "", subAttrValue, false, null);
     }
 
-    //When I use this processor in a flow with 'Join Enrichment', this processor harmonize json. It can add attributes which are not present by default
-    //So this attributes is null. It can add also a null value.
-    //Moreover, when we do a temporal request, if attributes have no temporal values it is still added and it is null
-    //But in NGSI-LD, we can't have a property with a null value or a null attribute
-    //So we do not add the attribute if it contains a null value or attribute is null
-    private void addAttributesIfValid(ArrayList<AttributesLD> attributesLd, AttributesLD attributeLD) {
+    // When this processor is used in a flow with a `Join Enrichment` processor, it harmonizes JSON among all processed entities, for instance adding attributes which are not present by default in an entity.
+    // In this case, these attributes are null or can have a null value.
+    // Moreover, when doing a temporal request, if some attributes have no temporal values, they are still added and they are null
+    // So we filter out attributes that contain a null value or whose whole value is null
+    private void addAttributeIfValid(ArrayList<AttributesLD> attributesLd, AttributesLD attributeLD) {
         if (attributeLD.getAttrValue() !=null && attributeLD.getAttrValue().toString() != "null")
             attributesLd.add(attributeLD);
     }
