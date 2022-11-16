@@ -30,6 +30,11 @@
         }
       }
     },
+    "nullValue" : {
+      "type" : "Property",
+      "value" : null
+    },
+    "nullAttribute" : null,
     "name" : {
       "type" : "Property",
       "value" : "test 01"

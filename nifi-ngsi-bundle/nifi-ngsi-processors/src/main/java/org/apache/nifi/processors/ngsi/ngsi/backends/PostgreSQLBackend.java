@@ -314,21 +314,19 @@ public class PostgreSQLBackend {
         String formattedField;
         switch (columnType) {
             case NUMERIC:
-                if (attributeValue != null && (attributeValue instanceof Number)) formattedField = attributeValue.toString();
+                if (attributeValue instanceof Number) formattedField = attributeValue.toString();
                 else formattedField = null;
                 break;
             case TIMESTAMPTZ:
             case DATE:
             case TIMETZ:
-                if (attributeValue != null) formattedField = "'" + attributeValue + "'";
-                else formattedField = null;
+                formattedField = "'" + attributeValue + "'";
                 break;
             case GEOMETRY:
                 formattedField = "ST_GeomFromGeoJSON('" + attributeValue + "')";
                 break;
             default:
-                if (attributeValue != null) formattedField = "$$" + attributeValue + "$$";
-                else formattedField = null;
+                formattedField = "$$" + attributeValue + "$$";
         }
         return formattedField;
     }

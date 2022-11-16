@@ -107,11 +107,11 @@ public class NGSIUtils {
                         for (int j = 0; j < values.length(); j++) {
                             JSONObject value = values.getJSONObject(j);
                             AttributesLD attributesLD = parseNgsiLdAttribute(key, value);
-                            attributes.add(attributesLD);
+                            addAttributeIfValid(attributes, attributesLD);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD attributesLD = parseNgsiLdAttribute(key, (JSONObject) object);
-                        attributes.add(attributesLD);
+                        addAttributeIfValid(attributes, attributesLD);
                     } else {
                         logger.warn("Attribute {} has unexpected value type: {}", key, object.getClass());
                     }
@@ -149,7 +149,7 @@ public class NGSIUtils {
         if ("Relationship".contentEquals(attrType)) {
             attrValue = value.get("object").toString();
         } else if ("Property".contentEquals(attrType)) {
-            attrValue = value.get("value");
+            attrValue = value.opt("value");
         } else if ("GeoProperty".contentEquals(attrType)) {
             attrValue = value;
         } else if("".contentEquals(attrType)){
@@ -166,7 +166,6 @@ public class NGSIUtils {
             if (("Property".equals(attrType) && "unitCode".equals(keyOne))) {
                 if (value.get(keyOne) instanceof String)
                     subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", value.getString(keyOne), false, null));
-                else subAttributes.add(new AttributesLD(keyOne.toLowerCase(), "Property", "", "", "", "", null, false, null));
 
             } else if ("RelationshipDetails".contains(keyOne)) {
                 JSONObject relation = value.getJSONObject(keyOne);
@@ -181,11 +180,11 @@ public class NGSIUtils {
                         for (int j = 0; j < valuesArray.length(); j++) {
                             JSONObject valueObject = valuesArray.getJSONObject(j);
                             AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, valueObject);
-                            subAttributes.add(subAttribute);
+                            addAttributeIfValid(subAttributes, subAttribute);
                         }
                     } else if (object instanceof JSONObject) {
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, (JSONObject) object);
-                        subAttributes.add(subAttribute);
+                        addAttributeIfValid(subAttributes, subAttribute);
                     } else {
                         logger.warn("Sub Attribute {} has unexpected value type: {}", relationKey, object.getClass());
                     }
@@ -197,11 +196,11 @@ public class NGSIUtils {
                     for (int j = 0; j < valuesArray.length(); j++) {
                         JSONObject valueObject = valuesArray.getJSONObject(j);
                         AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, valueObject);
-                        subAttributes.add(subAttribute);
+                        addAttributeIfValid(subAttributes, subAttribute);
                     }
                 } else if (object instanceof JSONObject) {
                     AttributesLD subAttribute = parseNgsiLdSubAttribute(keyOne, value.getJSONObject(keyOne));
-                    subAttributes.add(subAttribute);
+                    addAttributeIfValid(subAttributes, subAttribute);
                 } else {
                     logger.warn("Sub Attribute {} has unexpected value type: {}", keyOne, object.getClass());
                 }
@@ -223,5 +222,14 @@ public class NGSIUtils {
         }
 
         return new AttributesLD(key.toLowerCase(), subAttrType, "", "", "", "", subAttrValue, false, null);
+    }
+
+    // When this processor is used in a flow with a `Join Enrichment` processor, it harmonizes JSON among all processed entities, for instance adding attributes which are not present by default in an entity.
+    // In this case, these attributes are null or can have a null value.
+    // Moreover, when doing a temporal request, if some attributes have no temporal values, they are still added and they are null
+    // So we filter out attributes that contain a null value or whose whole value is null
+    private void addAttributeIfValid(ArrayList<AttributesLD> attributesLd, AttributesLD attributeLD) {
+        if (attributeLD.getAttrValue() !=null && attributeLD.getAttrValue().toString() != "null")
+            attributesLd.add(attributeLD);
     }
 }
