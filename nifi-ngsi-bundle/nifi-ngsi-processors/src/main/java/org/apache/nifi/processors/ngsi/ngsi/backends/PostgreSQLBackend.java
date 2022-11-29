@@ -253,9 +253,10 @@ public class PostgreSQLBackend {
         String encodedAttributeName = encodeAttributeToColumnName(attribute.getAttrName(), attribute.getDatasetId(), datasetIdPrefixToTruncate);
 
         if ("GeoProperty".equals(attribute.getAttrType())) {
-            JSONObject geometryObject = (JSONObject) attribute.getAttrValue();
-            JSONArray location = (JSONArray) geometryObject.getJSONObject("value").get("coordinates");
-            if (geometryObject.getJSONObject("value").getString("type").equals("Point")) {
+            JSONObject geoProppertyObject = (JSONObject) attribute.getAttrValue();
+            JSONObject geoJsonObject = geoProppertyObject.getJSONObject("value");
+            JSONArray location = (JSONArray) geoJsonObject.get("coordinates");
+            if (geoJsonObject.getString("type").equals("Point")) {
                 String encodedGeopropertyLon = encodeAttributeToColumnName(attribute.getAttrName(), "lon", datasetIdPrefixToTruncate);
                 String encodedGeopropertyLat = encodeAttributeToColumnName(attribute.getAttrName(), "lat", datasetIdPrefixToTruncate);
 
@@ -269,15 +270,14 @@ public class PostgreSQLBackend {
             JSONObject geoJsonProperties = new JSONObject();
             geoJsonProperties.put(NGSIConstants.ENTITY_ID, entity.entityId);
             geoJson.put("properties", geoJsonProperties);
-            geoJson.put("geometry", geometryObject);
+            geoJson.put("geometry", geoJsonObject);
 
             String encodedGeometry = encodeAttributeToColumnName(attribute.getAttrName(), "geometry", datasetIdPrefixToTruncate);
             String encodedGeoJson = encodeAttributeToColumnName(attribute.getAttrName(), "geojson", datasetIdPrefixToTruncate);
-            String encodedLocation = encodedAttributeName;
 
-            valuesForColumns.put(encodedGeometry, formatFieldForValueInsert(geometryObject.getJSONObject("value"), listOfFields.get(encodedGeometry)));
+            valuesForColumns.put(encodedGeometry, formatFieldForValueInsert(geoJsonObject, listOfFields.get(encodedGeometry)));
             valuesForColumns.put(encodedGeoJson, formatFieldForValueInsert(geoJson, listOfFields.get(encodedGeoJson)));
-            valuesForColumns.put(encodedLocation, formatFieldForValueInsert(location, listOfFields.get(encodedLocation)));
+            valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(location, listOfFields.get(encodedAttributeName)));
         }
         else {
             valuesForColumns.put(encodedAttributeName, formatFieldForValueInsert(attribute.getAttrValue(), listOfFields.get(encodedAttributeName)));
