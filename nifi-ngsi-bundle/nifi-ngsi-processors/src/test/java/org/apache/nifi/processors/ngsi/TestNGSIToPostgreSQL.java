@@ -874,10 +874,10 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
         assertEquals(POSTGRESQL_COLUMN_TYPES.TEXT, listOfFields.get("temperature"));
         assertNotEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, listOfFields.get("temperature"));
 
-        Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
+        backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
 
-        assertEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, newListOfFields.get("temperature"));
-        assertNotEquals(POSTGRESQL_COLUMN_TYPES.TEXT, newListOfFields.get("temperature"));
+        assertEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, listOfFields.get("temperature"));
+        assertNotEquals(POSTGRESQL_COLUMN_TYPES.TEXT, listOfFields.get("temperature"));
     }
 
     private String readFromInputStream(InputStream inputStream) throws IOException {
