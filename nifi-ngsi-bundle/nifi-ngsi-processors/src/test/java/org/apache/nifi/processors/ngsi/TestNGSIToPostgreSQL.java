@@ -874,7 +874,7 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
         Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
 
 
-        assertTrue(newListOfFields != listOfFields);
+        assertNotSame(newListOfFields, listOfFields);
         assertEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, newListOfFields.get("temperature"));
     }
 
