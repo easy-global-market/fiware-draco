@@ -862,7 +862,7 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
     }
 
     @Test
-    public void testGetNewListOfFields() throws Exception {
+    public void shouldChangeTheTypeOfField() throws Exception {
         ResultSet resultSetMock = Mockito.mock(ResultSet.class);
         when(resultSetMock.getString(1)).thenReturn("temperature");
         when(resultSetMock.getString(2)).thenReturn("numeric");
