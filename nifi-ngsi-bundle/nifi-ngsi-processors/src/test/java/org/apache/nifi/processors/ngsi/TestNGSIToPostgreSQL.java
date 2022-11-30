@@ -858,11 +858,11 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
         Map<String, List<AttributesLD>> attributesByObservedAt = entities.get(0).getEntityAttrsLD().stream().collect(Collectors.groupingBy(attrs -> attrs.observedAt));
         List<String> observedTimestamps = attributesByObservedAt.keySet().stream().sorted().collect(Collectors.toList());
 
-        assertEquals(instertQueryValue.split("values")[1].split("\\(").length, observedTimestamps.size()+1);
+        assertEquals(instertQueryValue.split("values")[1].split("\\),\\(").length, observedTimestamps.size());
     }
 
     @Test
-    public void testGetNewListOfFields() throws Exception {
+    public void shouldChangeTheTypeOfField() throws Exception {
         ResultSet resultSetMock = Mockito.mock(ResultSet.class);
         when(resultSetMock.getString(1)).thenReturn("temperature");
         when(resultSetMock.getString(2)).thenReturn("numeric");
@@ -871,11 +871,10 @@ runner.setProperty(NGSIToMySQL.ENABLE_ENCODING, "true");
         Map<String, POSTGRESQL_COLUMN_TYPES> listOfFields = new TreeMap<>();
         listOfFields.put("temperature", POSTGRESQL_COLUMN_TYPES.TEXT);
 
-        Map<String, POSTGRESQL_COLUMN_TYPES> newListOfFields = backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
+        listOfFields = backend.getUpdatedListOfTypedFields(resultSetMock, listOfFields);
 
-
-        assertNotSame(newListOfFields, listOfFields);
-        assertEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, newListOfFields.get("temperature"));
+        assertEquals(POSTGRESQL_COLUMN_TYPES.NUMERIC, listOfFields.get("temperature"));
+        assertNotEquals(POSTGRESQL_COLUMN_TYPES.TEXT, listOfFields.get("temperature"));
     }
 
     private String readFromInputStream(InputStream inputStream) throws IOException {
