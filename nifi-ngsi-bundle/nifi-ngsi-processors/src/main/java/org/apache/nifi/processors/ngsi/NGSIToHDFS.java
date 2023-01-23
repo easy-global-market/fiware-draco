@@ -25,6 +25,7 @@ import org.apache.nifi.processors.ngsi.ngsi.utils.NGSIUtils;
 
 import java.util.*;
 
+
 @SupportsBatching
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @Tags({"HDFS", "put", "rdbms", "database", "hadoop", "insert", "relational","NGSIv2", "NGSI","FIWARE"})

@@ -216,7 +216,7 @@ public class TestJsonNgsi {
                                     subAttrName = keyOne;
                                     subAttrValue = value2;
                                     hasSubAttrs = true;
-                                    subAttributes.add(new AttributesLD(subAttrName,subAttrValue,"", subAttrValue,false,null));
+                                    subAttributes.add(new AttributesLD(subAttrName,subAttrValue,"", "", "","", subAttrValue,false,null));
                                 }
                                 else if (!"value".equals(keyOne)){
                                     JSONObject value2 = value.getJSONObject(keyOne);
@@ -234,13 +234,13 @@ public class TestJsonNgsi {
                                     System.out.println(subAttrType);
                                     System.out.println(subAttrValue);
                                     hasSubAttrs= true;
-                                    subAttributes.add(new AttributesLD(subAttrName,subAttrType,"", subAttrValue,false,null));
+                                    subAttributes.add(new AttributesLD(subAttrName,subAttrType,"", "", "","", subAttrValue,false,null));
                                 }
                             }
                     }else if ("GeoProperty".contentEquals(attrType)){
                         attrValue = value.get("value").toString();
                     }
-                    attributes.add(new AttributesLD(key,attrType,"", attrValue, hasSubAttrs,subAttributes));
+                    attributes.add(new AttributesLD(key,attrType,"", "", "", "", attrValue, hasSubAttrs,subAttributes));
                     subAttributes=new ArrayList<>();
                     hasSubAttrs= false;
                 }
@@ -261,7 +261,7 @@ public class TestJsonNgsi {
             System.out.println(p.getFieldsForInsert(list.keySet()));
             System.out.println(p.getFieldsForInsert(list.keySet()));
             System.out.println(p.buildSchemaName("test",false,false,false));
-            System.out.println(p.buildTableName("",x,"db-by-entity-type",true,true,"ld",false));
+            System.out.println(p.buildTableName("",x,"db-by-entity-type",true,true,"ld",false, null));
             Map<String, POSTGRESQL_COLUMN_TYPES> listC = new HashMap<>();
             listC.put("a", POSTGRESQL_COLUMN_TYPES.TEXT);
             listC.put("b", POSTGRESQL_COLUMN_TYPES.TEXT);
@@ -269,7 +269,7 @@ public class TestJsonNgsi {
 
             System.out.println(p.addColumns("test","test",listC));
 
-            System.out.println(p.getValuesForInsert("column",x, Collections.emptyMap(), 000,"","ld",false, ""));
+            System.out.println(p.getValuesForInsert("column",x, Collections.emptyMap(), 000,"","ld", false,""));
             for (AttributesLD y :x.getEntityAttrsLD()){
                 System.out.println(y.getAttrName()+"-------");
                 System.out.println(y.isHasSubAttrs());
@@ -277,10 +277,6 @@ public class TestJsonNgsi {
                     y.getSubAttrs().forEach(z->System.out.println(z.getAttrName()));
                 }
             }
-
         }
-
-
     }
-
 }
