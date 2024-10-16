@@ -26,7 +26,7 @@
     <packaging>jar</packaging>
     <properties>
         <mongo.driver.version>4.5.0</mongo.driver.version>
-        <nifi.version>1.15.3</nifi.version>
+        <nifi.version>1.27.0</nifi.version>
     </properties>
 
     <dependencies>
@@ -36,8 +36,13 @@
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver-sync</artifactId>
-            <version>${mongo.driver.version}</version>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.12.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId> mongodb-driver-legacy</artifactId>
+            <version>4.3.2</version>
         </dependency>
         <dependency>
             <groupId>javax.xml.bind</groupId>
@@ -103,7 +108,7 @@
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-processor-utils</artifactId>
-            <version>${nifi.version}</version>
+            <version>1.15.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -216,7 +221,7 @@
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-standard-web-test-utils</artifactId>
-            <version>${nifi.version}</version>
+            <version>1.15.3</version>
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.nifi/nifi-extension-utils --><!-- https://mvnrepository.com/artifact/org.apache.nifi/nifi-database-utils -->
