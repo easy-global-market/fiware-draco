@@ -230,7 +230,7 @@
             <artifactId>nifi-database-utils</artifactId>
             <version>${nifi.version}</version>
         </dependency>
-  <dependency>
+        <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-json-utils</artifactId>
             <version>${nifi.version}</version>
