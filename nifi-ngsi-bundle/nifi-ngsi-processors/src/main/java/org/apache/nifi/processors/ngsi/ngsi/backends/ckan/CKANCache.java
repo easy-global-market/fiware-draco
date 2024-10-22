@@ -150,7 +150,7 @@ public class CKANCache extends HttpBackend {
         // query CKAN for the organization information
         String ckanURL = "/api/3/action/organization_show?id=" + orgName + "&include_datasets=true";
         ArrayList<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("X-CKAN-API-Key", apiKey));
+        headers.add(new BasicHeader("Authorization", apiKey));
         JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
 
         switch (res.getStatusCode()) {
@@ -205,7 +205,7 @@ public class CKANCache extends HttpBackend {
         // query CKAN for the package information
         String ckanURL = "/api/3/action/package_show?id=" + pkgName;
         ArrayList<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("X-CKAN-API-Key", apiKey));
+        headers.add(new BasicHeader("Authorization", apiKey));
         JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
 
         switch (res.getStatusCode()) {
@@ -269,7 +269,7 @@ public class CKANCache extends HttpBackend {
         
         String ckanURL = "/api/3/action/package_show?id=" + pkgName;
         ArrayList<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("X-CKAN-API-Key", apiKey));
+        headers.add(new BasicHeader("Authorization", apiKey));
         JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
 
         switch (res.getStatusCode()) {
@@ -404,7 +404,7 @@ public class CKANCache extends HttpBackend {
         System.out.println("Going to get the resources list from package " + pkgName);
         String ckanURL = "/api/3/action/package_show?id=" + pkgName;
         ArrayList<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("X-CKAN-API-Key", apiKey));
+        headers.add(new BasicHeader("Authorization", apiKey));
         JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
 
         if (res.getStatusCode() == 200) {
