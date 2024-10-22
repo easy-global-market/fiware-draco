@@ -776,7 +776,7 @@ public class CKANBackend extends HttpBackend {
 
     private JsonResponse doCKANRequest(String method, String urlPath, String jsonString) throws Exception {
         ArrayList<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("Authorization", apiKey));
+        headers.add(new BasicHeader("X-CKAN-API-Key", apiKey));
         headers.add(new BasicHeader("Content-Type", "application/json; charset=utf-8"));
         return doRequest(method, urlPath, true, headers, new StringEntity(jsonString, "UTF-8"));
     } // doCKANRequest
