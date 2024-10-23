@@ -26,6 +26,8 @@ import org.apache.http.entity.StringEntity;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpBackend {
     private final LinkedList<String> hosts;
@@ -36,6 +38,8 @@ public class HttpBackend {
     private final String krb5Password;
     private final HttpClientFactory httpClientFactory;
     private HttpClient httpClient;
+    private static final Logger logger = LoggerFactory.getLogger(HttpBackend.class);
+
 
     /**
      * Constructor.
@@ -96,8 +100,9 @@ public class HttpBackend {
                         response = doRequest(method, effectiveURL, headers, entity);
                     } // if else
                 } catch (Exception e) {
-                    System.out.println("There was a problem when performing the request (details=" + e.getMessage() + "). "
-                            + "Most probably the used http endpoint (" + host + ") is not active, trying another one");
+
+                    logger.error("There was a problem when performing the request (details=\"{}\"). "
+                            + "Most probably the used http endpoint (\"{}\") is not active, trying another one", e.getMessage(), host);
                     continue;
                 } // try catch
 
@@ -105,7 +110,7 @@ public class HttpBackend {
                 if (!hosts.getFirst().equals(host)) {
                     hosts.remove(host);
                     hosts.add(0, host);
-                    System.out.println("Placing the host in the first place of the list (host=" + host + ")");
+                    logger.info("Placing the host in the first place of the list (host=\"{}\")", host);
                 } // if
 
                 return response;
@@ -167,7 +172,7 @@ public class HttpBackend {
             } // for
         } // if
 
-        System.out.println("Http request: " + request.toString());
+        logger.debug("Http request: {}", request);
 
         try {
             httpRes = httpClient.execute(request);
@@ -190,7 +195,7 @@ public class HttpBackend {
             PrivilegedRequest req = new PrivilegedRequest(method, url, headers, entity);
             return createJsonResponse((HttpResponse) Subject.doAs(loginContext.getSubject(), req));
         } catch (LoginException e) {
-            System.out.println(e.getMessage());
+            logger.error("Error while trying to Login (details=\"{}\") ", e.getMessage());
             return null;
         } // try catch // try catch
     } // doPrivilegedRequest
@@ -226,12 +231,12 @@ public class HttpBackend {
                 Set<Principal> principals = current.getPrincipals();
 
                 for (Principal next : principals) {
-                    System.out.println("DOAS Principal: " + next.getName());
+                    logger.info("DOAS Principal: {}", next.getName());
                 } // for
 
                 return doRequest(method, url, headers, entity);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                logger.error("Error while performing request: {}", e.getMessage());
                 return null;
             } // try catch
         } // run
@@ -244,7 +249,7 @@ public class HttpBackend {
                 return null;
             } // if
 
-            System.out.println("Http response status line: " + httpRes.getStatusLine().toString());
+            logger.info("Http response status line: {}", httpRes.getStatusLine().toString());
 
             // parse the httpRes payload
             JSONObject jsonPayload = null;
@@ -260,7 +265,7 @@ public class HttpBackend {
                 } // while
 
                 reader.close();
-                System.out.println("Http response payload: " + res);
+                logger.debug("Http response payload: {}", res);
 
                 if (!res.isEmpty()) {
                     JSONParser jsonParser = new JSONParser();
