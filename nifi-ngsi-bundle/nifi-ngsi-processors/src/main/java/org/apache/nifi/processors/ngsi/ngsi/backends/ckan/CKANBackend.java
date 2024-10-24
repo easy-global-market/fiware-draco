@@ -250,7 +250,7 @@ public class CKANBackend extends HttpBackend {
             logger.info("Successful insert (resource/datastore id=\"{}\")", resId);
         } else {
             throw new Exception("Could not insert (resId=" + resId + ", statusCode="
-                    + res.getStatusCode() + ")");
+                    + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // insert
 
@@ -288,7 +288,7 @@ public class CKANBackend extends HttpBackend {
             return orgId;
         } else {
             throw new Exception("Could not create the orgnaization (orgName=" + orgName
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createOrganization
 
@@ -402,7 +402,7 @@ public class CKANBackend extends HttpBackend {
         */
         } else {
             throw new Exception("Could not create the package (orgId=" + orgId
-                    + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createPackage
 
@@ -450,7 +450,7 @@ public class CKANBackend extends HttpBackend {
             return resourceId;
         } else {
             throw new Exception("Could not create the resource (pkgId=" + pkgId
-                    + ", resName=" + resName + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", resName=" + resName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -488,7 +488,7 @@ public class CKANBackend extends HttpBackend {
             logger.info("Successful datastore creation (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not create the datastore (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -539,7 +539,7 @@ public class CKANBackend extends HttpBackend {
             logger.info("Successful datastore creation (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not create the datastore (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -566,7 +566,7 @@ public class CKANBackend extends HttpBackend {
                 logger.info("Successful view creation (resourceId=\"{}\")", resId);
             } else {
                 throw new Exception("Could not create the datastore (resId=" + resId
-                        + ", statusCode=" + res.getStatusCode() + ")");
+                        + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
             } // if else
         } // if
     } // createView
@@ -587,7 +587,7 @@ public class CKANBackend extends HttpBackend {
             return (((JSONArray) res.getJsonObject().get("result")).size() > 0);
         } else {
             throw new Exception("Could not check if the view exists (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // existsView
 
@@ -615,7 +615,7 @@ public class CKANBackend extends HttpBackend {
             return res.getJsonObject();
         } else {
             throw new Exception("Could not search for the records (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // getRecords
 
@@ -640,7 +640,7 @@ public class CKANBackend extends HttpBackend {
             logger.info("Successful deletion (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not delete the records (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // deleteRecords
 

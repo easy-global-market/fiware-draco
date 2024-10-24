@@ -334,6 +334,7 @@ public class NGSIToCKAN extends AbstractProcessor {
             session.transfer(flowFile, REL_SUCCESS);
         } catch (Exception e) {
             logger.error("Failed to insert {} into CKAN due to {}", new Object[] {flowFile, e}, e);
+            session.putAttribute(flowFile, "ckan.error.details", e.getMessage());
             session.transfer(flowFile, REL_FAILURE);
             context.yield();
         }
