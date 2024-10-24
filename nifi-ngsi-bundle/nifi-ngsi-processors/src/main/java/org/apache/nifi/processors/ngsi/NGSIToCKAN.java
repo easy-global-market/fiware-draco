@@ -53,7 +53,7 @@ public class NGSIToCKAN extends AbstractProcessor {
             .displayName("CKAN Viewer")
             .description("The CKAN resource page can contain one or more visualizations of the resource data or file contents (a table, a bar chart, a map, etc). These are commonly referred to as resource views.")
             .required(true)
-            .defaultValue("recline_grid_view")
+            .defaultValue("datatables_view")
             .allowableValues("datatables_view", "text_view","image_view","video_view","audio_view","webpage_view")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
