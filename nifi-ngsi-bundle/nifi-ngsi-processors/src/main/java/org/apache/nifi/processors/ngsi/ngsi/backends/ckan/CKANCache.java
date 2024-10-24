@@ -11,6 +11,8 @@ import org.apache.nifi.processors.ngsi.ngsi.backends.http.HttpBackend;
 import org.apache.nifi.processors.ngsi.ngsi.backends.http.JsonResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -25,7 +27,8 @@ public class CKANCache extends HttpBackend {
     private HashMap<String, String> resMap; // this cache contains the translation from resource name to identifier
     private Iterator entries;
     private Entry nextEntry;
-    
+    private static final Logger logger = LoggerFactory.getLogger(CKANCache.class);
+
     /**
      * Constructor.
      * @param host
@@ -141,11 +144,11 @@ public class CKANCache extends HttpBackend {
     public boolean isCachedOrg(String orgName) throws Exception{
         // check if the organization has already been cached
         if (tree.containsKey(orgName)) {
-            System.out.println("Organization found in the cache (orgName=" + orgName + ")");
+            logger.info("Organization found in the cache (orgName=\"{}\")", orgName);
             return true;
         } // if
 
-        System.out.println("Organization not found in the cache, querying CKAN for it (orgName=" + orgName + ")");
+        logger.info("Organization not found in the cache, querying CKAN for it (orgName=\"{}\")", orgName);
         
         // query CKAN for the organization information
         String ckanURL = "/api/3/action/organization_show?id=" + orgName + "&include_datasets=true";
@@ -162,26 +165,25 @@ public class CKANCache extends HttpBackend {
                 String orgState = result.get("state").toString();
                 
                 if (orgState.equals("deleted")) {
-                    System.out.println("The organization '" + orgName + "' exists but it is in a "
-                            + "deleted state");
+                    logger.info("The organization '{}' exists but it is in a deleted state", orgName);
                 } // if
                 
                 // put the organization in the tree and in the organization map
                 String orgId = result.get("id").toString();
                 tree.put(orgName, new HashMap<String, ArrayList<String>>());
                 orgMap.put(orgName, orgId);
-                System.out.println("Organization found in CKAN, now cached (orgName/orgId=" + orgName + "/" + orgId + ")");
+                logger.info("Organization found in CKAN, now cached (orgName/orgId=\"{}/{}\")", orgName, orgId);
                 
                 // get the packages and populate the packages map
                 JSONArray packages = (JSONArray) result.get("packages");
-                System.out.println("Going to populate the packages cache (orgName=" + orgName + ")");
+                logger.info("Going to populate the packages cache (orgName=\"{}\")", orgName);
                 populatePackagesMap(packages, orgName);
                 return true;
             case 404:
                 return false;
             default:
                 throw new Exception("Could not check if the organization exists ("
-                        + "orgName=" + orgName + ", statusCode=" + res.getStatusCode() + ")");
+                        + "orgName=" + orgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedOrg
     
@@ -195,13 +197,12 @@ public class CKANCache extends HttpBackend {
     public boolean isCachedPkg(String orgName, String pkgName) throws Exception {
         // check if the package has already been cached
         if (tree.get(orgName).containsKey(pkgName)) {
-            System.out.println("Package found in the cache (orgName=" + orgName + ", pkgName=" + pkgName + ")");
+            logger.info("Package found in the cache (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
             return true;
         } // if
 
-        System.out.println("Package not found in the cache, querying CKAN for it (orgName=" + orgName + ", pkgName="
-                + pkgName + ")");
-        
+        logger.info("Package not found in the cache, querying CKAN for it (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
+
         // query CKAN for the package information
         String ckanURL = "/api/3/action/package_show?id=" + pkgName;
         ArrayList<Header> headers = new ArrayList<>();
@@ -225,20 +226,18 @@ public class CKANCache extends HttpBackend {
                 String pkgId = result.get("id").toString();
                 tree.get(orgName).put(pkgName, new ArrayList<String>());
                 orgMap.put(pkgName, pkgId);
-                System.out.println("Package found in CKAN, now cached (orgName=" + orgName + ", pkgName/pkgId=" + pkgName
-                        + "/" + pkgId + ")");
+                logger.info("Package found in CKAN, now cached (orgName=\"{}\", pkgName/pkgId=\"{}/{}\")", orgName, pkgName, pkgId);
                 
                 // get the resource and populate the resource map
                 JSONArray resources = (JSONArray) result.get("resources");
-                System.out.println("Going to populate the resources cache (orgName=" + orgName + ", pkgName=" + pkgName
-                        + ")");
+                logger.info("Going to populate the resources cache (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
                 populateResourcesMap(resources, orgName, pkgName, false);
                 return true;
             case 404:
                 return false;
             default:
                 throw new Exception("Could not check if the package exists ("
-                        + "orgName=" + orgName + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ")");
+                        + "orgName=" + orgName + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedPkg
     
@@ -254,13 +253,12 @@ public class CKANCache extends HttpBackend {
         throws Exception {
         // check if the resource has already been cached
         if (tree.get(orgName).get(pkgName).contains(resName)) {
-            System.out.println("Resource found in the cache (orgName=" + orgName + ", pkgName=" + pkgName + ", resName="
-                    + resName + ")");
+            logger.info("Resource found in the cache (orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
             return true;
         } // if
 
-        System.out.println("Resource not found in the cache, querying CKAN for the whole package containing it "
-                + "(orgName=" + orgName + ", pkgName=" + pkgName + ", resName=" + resName + ")");
+        logger.info("Resource not found in the cache, querying CKAN for the whole package containing it "
+                + "(orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
         
         // reached this point, we need to query CKAN about the resource, in order to know if it exists in CKAN
         // nevertheless, the CKAN API allows us to query for a certain resource by id, not by name...
@@ -275,8 +273,7 @@ public class CKANCache extends HttpBackend {
         switch (res.getStatusCode()) {
             case 200:
                 // the package exists in CKAN
-                System.out.println("Package found in CKAN, going to update the cached resources (orgName=" + orgName
-                        + ", pkgName=" + pkgName + ")");
+                logger.info("Package found in CKAN, going to update the cached resources (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
                 
                 // there is no need to check if the package is in "deleted" state...
                 
@@ -289,18 +286,17 @@ public class CKANCache extends HttpBackend {
                 if (resources.isEmpty()) {
                     return false;
                 } else {
-                    System.out.println("Going to populate the resources cache (orgName=" + orgName + ", pkgName=" + pkgName
-                            + ")");
+                    logger.info("Going to populate the resources cache (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
                     populateResourcesMap(resources, orgName, pkgName, true);
                     
                     // check if the resource is within the resources cache, once populated
                     if (tree.get(orgName).get(pkgName).contains(resName)) {
-                        System.out.println("Resource found in the cache, once queried CKAN " + "(orgName=" + orgName
-                                + ", pkgName=" + pkgName + ", resName=" + resName + ")");
+                        logger.info("Resource found in the cache, once queried CKAN " +
+                                "(orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
                         return true;
                     } else {
-                        System.out.println("Resource not found in the cache, once queried CKAN " + "(orgName=" + orgName
-                                + ", pkgName=" + pkgName + ", resName=" + resName + ")");
+                        logger.info("Resource not found in the cache, once queried CKAN " +
+                                "(orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
                         return false;
                     } // if else
                 } // if else
@@ -309,7 +305,7 @@ public class CKANCache extends HttpBackend {
             default:
                 throw new Exception("Could not check if the resource exists ("
                         + "orgName=" + orgName + ", pkgName=" + pkgName + ", resName=" + resName
-                        + ", statusCode=" + res.getStatusCode() + ")");
+                        + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedRes
 
@@ -322,11 +318,11 @@ public class CKANCache extends HttpBackend {
         throws Exception {
         // this check is for debuging purposes
         if (packages == null || packages.isEmpty()) {
-            System.out.println("The pacakges list is empty, nothing to cache");
+            logger.info("The packages list is empty, nothing to cache");
             return;
         } // if
 
-        System.out.println("Packages to be populated: " + packages.toJSONString() + "(orgName=" + orgName + ")");
+        logger.info("Packages to be populated:\"{}\" (orgName=\"{}\")", packages, orgName);
 
         // iterate on the packages
         Iterator<JSONObject> iterator = packages.iterator();
@@ -347,15 +343,13 @@ public class CKANCache extends HttpBackend {
             String pkgId = pkg.get("id").toString();
             tree.get(orgName).put(pkgName, new ArrayList<String>());
             this.setPkgId(orgName, pkgName, pkgId);
-            System.out.println("Package found in CKAN, now cached (orgName=" + orgName + " -> pkgName/pkgId=" + pkgName
-                    + "/" + pkgId + ")");
+            logger.info("Package found in CKAN, now cached (orgName=\"{}\" -> pkgName/pkgId=\"{}/{}\")", orgName, pkgName, pkgId);
             
             // from CKAN 2.4, the organization_show method does not return the per-package list of resources
             JSONArray resources = getResources(pkgName);
 
             // populate the resources map
-            System.out.println("Going to populate the resources cache (orgName=" + orgName + ", pkgName=" + pkgName
-                    + ")");
+            logger.info("Going to populate the resources cache (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
             populateResourcesMap(resources, orgName, pkgName, false);
         } // while
     } // populatePackagesMap
@@ -370,12 +364,11 @@ public class CKANCache extends HttpBackend {
     private void populateResourcesMap(JSONArray resources, String orgName, String pkgName, boolean checkExistence) {
         // this check is for debuging purposes
         if (resources == null || resources.isEmpty()) {
-            System.out.println("The resources list is empty, nothing to cache");
+            logger.info("The resources list is empty, nothing to cache");
             return;
         } // if
 
-        System.out.println("Resources to be populated: " + resources.toJSONString() + "(orgName=" + orgName
-                + ", pkgName=" + pkgName + ")");
+        logger.info("Resources to be populated: \"{}\" (orgName=\"{}\", pkgName=\"{}\")", resources, orgName, pkgName);
         
         // iterate on the resources
         Iterator<JSONObject> iterator = resources.iterator();
@@ -395,13 +388,13 @@ public class CKANCache extends HttpBackend {
             
             tree.get(orgName).get(pkgName).add(resourceName);
             this.setResId(orgName, pkgName, resourceName, resourceId);
-            System.out.println("Resource found in CKAN, now cached (orgName=" + orgName + " -> pkgName=" + pkgName
-                    + " -> " + "resourceName/resourceId=" + resourceName + "/" + resourceId + ")");
+            logger.info("Resource found in CKAN, now cached (orgName=\"{}\" -> pkgName=\"{}\" -> " +
+                    "resourceName/resourceId=\"{}/{}\")", orgName, pkgName, resourceName, resourceId);
         } // while
     } // populateResourcesMap
     
     private JSONArray getResources(String pkgName) throws Exception {
-        System.out.println("Going to get the resources list from package " + pkgName);
+        logger.info("Going to get the resources list from package {}", pkgName);
         String ckanURL = "/api/3/action/package_show?id=" + pkgName;
         ArrayList<Header> headers = new ArrayList<>();
         headers.add(new BasicHeader("Authorization", apiKey));

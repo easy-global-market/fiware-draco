@@ -278,7 +278,7 @@ public class NGSIToCKAN extends AbstractProcessor {
             ArrayList<Entity> entities= new ArrayList<>();
             entities = ("ld".equals(context.getProperty(NGSI_VERSION).getValue()))?event.getEntitiesLD():event.getEntities();
             getLogger().info("[] Persisting data at NGSICKANSink (orgName=" + orgName+ ", ");
-            System.out.println(dcatMetadata.toString());
+            getLogger().debug("DCAT metadata: {}" , dcatMetadata);
 
             for (Entity entity : entities) {
                 final String pkgName = ckanBackend.buildPkgName(fiwareService,entity,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
@@ -334,6 +334,7 @@ public class NGSIToCKAN extends AbstractProcessor {
             session.transfer(flowFile, REL_SUCCESS);
         } catch (Exception e) {
             logger.error("Failed to insert {} into CKAN due to {}", new Object[] {flowFile, e}, e);
+            session.putAttribute(flowFile, "ckan.error.details", e.getMessage());
             session.transfer(flowFile, REL_FAILURE);
             context.yield();
         }

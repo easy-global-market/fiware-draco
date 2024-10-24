@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.apache.nifi.processors.ngsi.ngsi.utils.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public abstract class CKANAggregator {
@@ -24,6 +26,8 @@ public abstract class CKANAggregator {
     protected String orgName;
     protected String pkgName;
     protected String resName;
+    private static final Logger logger = LoggerFactory.getLogger(CKANAggregator.class);
+
 
     /**
      * Gets aggregation.
@@ -264,8 +268,7 @@ public abstract class CKANAggregator {
                 ArrayList<AttributesLD> attributes = entity.getEntityAttrsLD();
 
                 if (attributes == null || attributes.isEmpty()) {
-                    System.out.println("No attributes within the notified entity, nothing is done (id=" + entityId
-                            + ", type=" + entityType + ")");
+                    logger.warn("No attributes within the notified entity, nothing is done (id=\"{}\", type=\"{}\")", entityId, entityType);
                     return;
                 } // if
 

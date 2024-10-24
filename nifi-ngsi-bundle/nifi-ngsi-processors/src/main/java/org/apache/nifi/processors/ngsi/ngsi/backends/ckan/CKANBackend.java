@@ -14,6 +14,8 @@ import org.apache.nifi.processors.ngsi.ngsi.utils.*;
 import org.json.JSONException;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ public class CKANBackend extends HttpBackend {
     private final String apiKey;
     private final String viewer;
     private CKANCache cache;
+    private static final Logger logger = LoggerFactory.getLogger(CKANBackend.class);
 
     /**
      * Constructor.
@@ -55,8 +58,10 @@ public class CKANBackend extends HttpBackend {
 
     public void persist(String orgName, String pkgName, String resName, String records, boolean createEnabled, DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
-        System.out.println("Going to lookup for the resource id, the cache may be updated during the process (orgName="
-                + orgName + ", pkgName=" + pkgName + ", resName=" + resName + ")");
+
+        logger.info("Going to lookup for the resource id, the cache may be updated during the process (orgName=\"{}\", " +
+                "pkgName=\"{}\", resName=\"{}\"" , orgName, pkgName, resName);
+
         String resId = "";
         if (!createEnabled) {
             resId= resourceLookupOrCreateDynamicFields(orgName, pkgName, resName,records, dcatMetadata,createDataStore);
@@ -68,15 +73,16 @@ public class CKANBackend extends HttpBackend {
                     + ", resName=" + resName + ")");
         } else {
             if (createDataStore){
-                System.out.println("Going to persist the data (orgName=" + orgName + ", pkgName=" + pkgName
-                    + ", resName/resId=" + resName + "/" + resId + ")");
+
+                logger.info("Going to persist the data (orgName=\"{}\", pkgName=\"{}\", resName/resId=\"{}/{}\")", orgName, pkgName, resName, resId);
 
                     insert(resId, records);
-                }
-            else{
-                System.out.println("DataStore was not created in the resource (orgName=" + orgName + ", pkgName=" + pkgName
-                        + ", resName/resId=" + resName + "/" + resId + ")");
-                }
+            }
+            else {
+
+                logger.warn("DataStore was not created in the resource (orgName=\"{}\", pkgName=\"{}\", resName/resId=\"{}/{}\")", orgName, pkgName, resName, resId);
+
+            }
         } // if else
     } // persist
 
@@ -91,8 +97,8 @@ public class CKANBackend extends HttpBackend {
     private String resourceLookupOrCreateDynamicFields(String orgName, String pkgName, String resName, String records,DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
         if (!cache.isCachedOrg(orgName)) {
-            System.out.println("The organization was not cached nor existed in CKAN (orgName=" + orgName + ")");
-            
+            logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
+
             String orgId = createOrganization(orgName,dcatMetadata);
             cache.addOrg(orgName);
             cache.setOrgId(orgName, orgId);
@@ -110,11 +116,10 @@ public class CKANBackend extends HttpBackend {
             // if else
         } // if
 
-        System.out.println("The organization was cached (orgName=" + orgName + ")");
+        logger.info("The organization was cached (orgName=\"{}\")", orgName);
 
         if (!cache.isCachedPkg(orgName, pkgName)) {
-            System.out.println("The package was not cached nor existed in CKAN (orgName=" + orgName + ", pkgName="
-                    + pkgName + ")");
+            logger.info("The package was not cached nor existed in CKAN (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
 
             String pkgId = createPackage(pkgName, cache.getOrgId(orgName), dcatMetadata);
             cache.addPkg(orgName, pkgName);
@@ -130,11 +135,10 @@ public class CKANBackend extends HttpBackend {
 
         } // if
 
-        System.out.println("The package was cached (orgName=" + orgName + ", pkgName=" + pkgName + ")");
+        logger.info("The package was cached (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
 
         if (!cache.isCachedRes(orgName, pkgName, resName)) {
-            System.out.println("The resource was not cached nor existed in CKAN (orgName=" + orgName + ", pkgName="
-                    + pkgName + ", resName=" + resName + ")");
+            logger.info("The resource was not cached nor existed in CKAN (orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")" ,orgName, pkgName, resName);
 
             String resId = this.createResource(resName, cache.getPkgId(orgName, pkgName), dcatMetadata);
             cache.addRes(orgName, pkgName, resName);
@@ -147,8 +151,7 @@ public class CKANBackend extends HttpBackend {
 
         } // if
 
-        System.out.println("The resource was cached (orgName=" + orgName + ", pkgName=" + pkgName + ", resName="
-                + resName + ")");
+        logger.info("The resource was cached (orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
 
         return cache.getResId(orgName, pkgName, resName);
     } // resourceLookupOrCreate
@@ -156,7 +159,7 @@ public class CKANBackend extends HttpBackend {
     private String resourceLookupOrCreate(String orgName, String pkgName, String resName, boolean createEnabled, DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
         if (!cache.isCachedOrg(orgName)) {
-            System.out.println("The organization was not cached nor existed in CKAN (orgName=" + orgName + ")");
+            logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
 
             if (createEnabled) {
                 String orgId = createOrganization(orgName,dcatMetadata);
@@ -178,11 +181,10 @@ public class CKANBackend extends HttpBackend {
             } // if else
         } // if
 
-        System.out.println("The organization was cached (orgName=" + orgName + ")");
+        logger.info("The organization was cached (orgName=\"{}\")", orgName);
 
         if (!cache.isCachedPkg(orgName, pkgName)) {
-            System.out.println("The package was not cached nor existed in CKAN (orgName=" + orgName + ", pkgName="
-                    + pkgName + ")");
+            logger.info("The package was not cached nor existed in CKAN (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
 
             if (createEnabled) {
                 String pkgId = createPackage(pkgName, cache.getOrgId(orgName), dcatMetadata);
@@ -201,11 +203,10 @@ public class CKANBackend extends HttpBackend {
             } // if else
         } // if
 
-        System.out.println("The package was cached (orgName=" + orgName + ", pkgName=" + pkgName + ")");
+        logger.info("The package was cached (orgName=\"{}\", pkgName=\"{}\")", orgName, pkgName);
 
         if (!cache.isCachedRes(orgName, pkgName, resName)) {
-            System.out.println("The resource was not cached nor existed in CKAN (orgName=" + orgName + ", pkgName="
-                    + pkgName + ", resName=" + resName + ")");
+            logger.info("The resource was not cached nor existed in CKAN (orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
 
             if (createEnabled) {
                 String resId = this.createResource(resName, cache.getPkgId(orgName, pkgName), dcatMetadata);
@@ -221,8 +222,7 @@ public class CKANBackend extends HttpBackend {
             } // if else
         } // if
 
-        System.out.println("The resource was cached (orgName=" + orgName + ", pkgName=" + pkgName + ", resName="
-                + resName + ")");
+        logger.info("The resource was cached (orgName=\"{}\", pkgName=\"{}\", resName=\"{}\")", orgName, pkgName, resName);
 
         return cache.getResId(orgName, pkgName, resName);
     } // resourceLookupOrCreate
@@ -247,10 +247,10 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful insert (resource/datastore id=" + resId + ")");
+            logger.info("Successful insert (resource/datastore id=\"{}\")", resId);
         } else {
             throw new Exception("Could not insert (resId=" + resId + ", statusCode="
-                    + res.getStatusCode() + ")");
+                    + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // insert
 
@@ -273,7 +273,7 @@ public class CKANBackend extends HttpBackend {
 
             //dataJson.add("extras",extrasJsonArray);
         }
-        System.out.println(dataJson.toString());
+        logger.debug("dataJson: {}",dataJson);
 
         // create the CKAN request URL
         String urlPath = "/api/3/action/organization_create";
@@ -284,11 +284,11 @@ public class CKANBackend extends HttpBackend {
         // check the status
         if (res.getStatusCode() == 200) {
             String orgId = ((JSONObject) res.getJsonObject().get("result")).get("id").toString();
-            System.out.println("Successful organization creation (orgName/OrgId=" + orgName + "/" + orgId + ")");
+            logger.info("Successful organization creation (orgName/OrgId=\"{}/{}\")", orgName, orgId);
             return orgId;
         } else {
             throw new Exception("Could not create the orgnaization (orgName=" + orgName
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createOrganization
 
@@ -373,7 +373,7 @@ public class CKANBackend extends HttpBackend {
             dataJson.add("extras",extrasJsonArray);
             dataJson.add("tags",tagsJsonArray);
         }
-        System.out.println(dataJson.toString());
+        logger.debug("dataJson: {}",dataJson);
         // create the CKAN request URL
         String urlPath = "/api/3/action/package_create";
 
@@ -383,7 +383,7 @@ public class CKANBackend extends HttpBackend {
         // check the status
         if (res.getStatusCode() == 200) {
             String packageId = ((JSONObject) res.getJsonObject().get("result")).get("id").toString();
-            System.out.println("Successful package creation (pkgName/pkgId=" + pkgName + "/" + packageId + ")");
+            logger.info("Successful package creation (pkgName/pkgId=\"{}/{}\")", pkgName, packageId);
             return packageId;
         /*
         This is not deleted if in the future we try to activate deleted elements again
@@ -402,7 +402,7 @@ public class CKANBackend extends HttpBackend {
         */
         } else {
             throw new Exception("Could not create the package (orgId=" + orgId
-                    + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createPackage
 
@@ -436,7 +436,7 @@ public class CKANBackend extends HttpBackend {
         extrasJson.addProperty("value",dcatMetadata.getLicenseType());
         //extrasJsonArray.add(extrasJson);
         dataJson.add("extras",extrasJsonArray);
-        System.out.println(dataJson.toString());
+        logger.debug("dataJson: {}",dataJson);
         // create the CKAN request URL
         String urlPath = "/api/3/action/resource_create";
 
@@ -446,12 +446,11 @@ public class CKANBackend extends HttpBackend {
         // check the status
         if (res.getStatusCode() == 200) {
             String resourceId = ((JSONObject) res.getJsonObject().get("result")).get("id").toString();
-            System.out.println("Successful resource creation (resName/resId=" + resName + "/" + resourceId
-                    + ")");
+            logger.info("Successful resource creation (resName/resId=\"{}/{}\")", resName, resourceId);
             return resourceId;
         } else {
             throw new Exception("Could not create the resource (pkgId=" + pkgId
-                    + ", resName=" + resName + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", resName=" + resName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -486,10 +485,10 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful datastore creation (resourceId=" + resId + ")");
+            logger.info("Successful datastore creation (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not create the datastore (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -527,7 +526,7 @@ public class CKANBackend extends HttpBackend {
         dataStore.setForce("true");
         String jsonString = gson.toJson(dataStore);
 
-        System.out.println("Successful datastore creation jsonString=" + jsonString + "");
+        logger.info("Successful datastore creation jsonString=\"{}\"", jsonString);
 
         // create the CKAN request URL
         String urlPath = "/api/3/action/datastore_create";
@@ -537,10 +536,10 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful datastore creation (resourceId=" + resId + ")");
+            logger.info("Successful datastore creation (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not create the datastore (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // createResource
 
@@ -564,10 +563,10 @@ public class CKANBackend extends HttpBackend {
 
             // check the status
             if (res.getStatusCode() == 200) {
-                System.out.println("Successful view creation (resourceId=" + resId + ")");
+                logger.info("Successful view creation (resourceId=\"{}\")", resId);
             } else {
                 throw new Exception("Could not create the datastore (resId=" + resId
-                        + ", statusCode=" + res.getStatusCode() + ")");
+                        + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
             } // if else
         } // if
     } // createView
@@ -584,11 +583,11 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful view listing (resourceId=" + resId + ")");
+            logger.info("Successful view listing (resourceId=\"{}\")", resId);
             return (((JSONArray) res.getJsonObject().get("result")).size() > 0);
         } else {
             throw new Exception("Could not check if the view exists (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // existsView
 
@@ -612,11 +611,11 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful search (resourceId=" + resId + ")");
+            logger.info("Successful search (resourceId=\"{}\")", resId);
             return res.getJsonObject();
         } else {
             throw new Exception("Could not search for the records (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // getRecords
 
@@ -638,10 +637,10 @@ public class CKANBackend extends HttpBackend {
 
         // check the status
         if (res.getStatusCode() == 200) {
-            System.out.println("Successful deletion (resourceId=" + resId + ")");
+            logger.info("Successful deletion (resourceId=\"{}\")", resId);
         } else {
             throw new Exception("Could not delete the records (resId=" + resId
-                    + ", statusCode=" + res.getStatusCode() + ")");
+                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // if else
     } // deleteRecords
 
@@ -691,10 +690,10 @@ public class CKANBackend extends HttpBackend {
         } while (alreadyDeleted < toBeDeleted);
 
         if (filters.isEmpty()) {
-            System.out.println("No records to be deleted");
+            logger.info("No records to be deleted");
         } else {
             filters += "]}";
-            System.out.println("Records must be deleted (resId=" + resId + ", filters=" + filters + ")");
+            logger.info("Records must be deleted (resId=\"{}\", filters=\"{}\")", resId, filters);
             deleteRecords(resId, filters);
         } // if else
     } // capRecords
@@ -757,10 +756,10 @@ public class CKANBackend extends HttpBackend {
             } while (morePages);
 
             if (filters.isEmpty()) {
-                System.out.println("No records to be deleted");
+                logger.info("No records to be deleted");
             } else {
                 filters += "]}";
-                System.out.println("Records to be deleted, resId=" + resId + ", filters=" + filters);
+                logger.info("Records to be deleted (resId=\"{}\", filters=\"{}\")", resId, filters);
                 deleteRecords(resId, filters);
             } // if else
         } // while
