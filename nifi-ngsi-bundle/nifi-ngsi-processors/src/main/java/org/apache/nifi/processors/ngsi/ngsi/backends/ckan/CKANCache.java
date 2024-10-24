@@ -183,7 +183,7 @@ public class CKANCache extends HttpBackend {
                 return false;
             default:
                 throw new Exception("Could not check if the organization exists ("
-                        + "orgName=" + orgName + ", statusCode=" + res.getStatusCode() + ")");
+                        + "orgName=" + orgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedOrg
     
@@ -237,7 +237,7 @@ public class CKANCache extends HttpBackend {
                 return false;
             default:
                 throw new Exception("Could not check if the package exists ("
-                        + "orgName=" + orgName + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ")");
+                        + "orgName=" + orgName + ", pkgName=" + pkgName + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedPkg
     
@@ -305,7 +305,7 @@ public class CKANCache extends HttpBackend {
             default:
                 throw new Exception("Could not check if the resource exists ("
                         + "orgName=" + orgName + ", pkgName=" + pkgName + ", resName=" + resName
-                        + ", statusCode=" + res.getStatusCode() + ")");
+                        + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
         } // switch
     } // isCachedRes
 
