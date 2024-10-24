@@ -268,7 +268,7 @@ public abstract class CKANAggregator {
                 ArrayList<AttributesLD> attributes = entity.getEntityAttrsLD();
 
                 if (attributes == null || attributes.isEmpty()) {
-                    logger.warn("No attributes within the notified entity, nothing is done (id=\"{}\", type=\"{}\")", entityId, entityType);
+                    logger.info("No attributes within the notified entity, nothing is done (id=\"{}\", type=\"{}\")", entityId, entityType);
                     return;
                 } // if
 

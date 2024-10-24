@@ -80,7 +80,7 @@ public class CKANBackend extends HttpBackend {
             }
             else {
 
-                logger.warn("DataStore was not created in the resource (orgName=\"{}\", pkgName=\"{}\", resName/resId=\"{}/{}\")", orgName, pkgName, resName, resId);
+                logger.info("DataStore was not created in the resource (orgName=\"{}\", pkgName=\"{}\", resName/resId=\"{}/{}\")", orgName, pkgName, resName, resId);
 
             }
         } // if else
