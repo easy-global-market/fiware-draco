@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+import static org.apache.nifi.processors.ngsi.ngsi.utils.NGSIConstants.JSON_LD_FORMAT;
+
 public class BuildDCATMetadata {
     public DCATMetadata getMetadataFromFlowFile(FlowFile flowFile, final ProcessSession session) {
 
@@ -52,7 +54,7 @@ public class BuildDCATMetadata {
                 newFlowFileAttributes.get("accessURL"),
                 newFlowFileAttributes.get("availability"),
                 newFlowFileAttributes.get("resourceDescription"),
-                newFlowFileAttributes.get("format"),
+                JSON_LD_FORMAT,
                 newFlowFileAttributes.get("mimeType"),
                 newFlowFileAttributes.get("license"),
                 newFlowFileAttributes.get("licenseType"),
