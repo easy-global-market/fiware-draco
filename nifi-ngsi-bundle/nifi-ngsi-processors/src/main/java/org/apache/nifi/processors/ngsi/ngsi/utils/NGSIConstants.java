@@ -26,6 +26,9 @@ public final class NGSIConstants {
     public static final String PARAM_DEFAULT_SERVICE_PATH = "default_service_path";
     public static final String PARAM_NOTIFICATION_TARGET  = "notification_target";
 
+    // JSON-LD format
+    public static final String JSON_LD_FORMAT = "application/ld+json";
+
     //NGSICKANSink specific constants
     // http://docs.ckan.org/en/latest/api/#ckan.logic.action.create.organization_create
     // http://docs.ckan.org/en/latest/api/#ckan.logic.action.create.package_create
