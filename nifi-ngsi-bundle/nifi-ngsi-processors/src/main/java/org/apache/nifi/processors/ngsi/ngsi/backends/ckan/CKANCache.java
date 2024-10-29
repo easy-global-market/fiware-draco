@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import org.apache.http.Header;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.nifi.processors.ngsi.ngsi.backends.http.HttpBackend;
 import org.apache.nifi.processors.ngsi.ngsi.backends.http.JsonResponse;
@@ -151,33 +152,24 @@ public class CKANCache extends HttpBackend {
         logger.info("Organization not found in the cache, querying CKAN for it (orgName=\"{}\")", orgName);
         
         // query CKAN for the organization information
-        String ckanURL = "/api/3/action/organization_show?id=" + orgName + "&include_datasets=true";
+        String ckanURL = "/api/3/action/organization_autocomplete";
+        String jsonString = String.format("{\"q\":\"%s\"}", orgName);
+
         ArrayList<Header> headers = new ArrayList<>();
         headers.add(new BasicHeader("Authorization", apiKey));
-        JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
+        JsonResponse res = doRequest("GET", ckanURL, true, headers, new StringEntity(jsonString, "UTF-8"));
 
         switch (res.getStatusCode()) {
             case 200:
                 // the organization exists in CKAN
-                JSONObject result = (JSONObject) res.getJsonObject().get("result");
-                
-                // check if the organization is in "deleted" state
-                String orgState = result.get("state").toString();
-                
-                if (orgState.equals("deleted")) {
-                    logger.info("The organization '{}' exists but it is in a deleted state", orgName);
-                } // if
+                JSONArray result = (JSONArray) res.getJsonObject().get("result");
+                JSONObject organization = (JSONObject) result.get(0);
                 
                 // put the organization in the tree and in the organization map
-                String orgId = result.get("id").toString();
-                tree.put(orgName, new HashMap<String, ArrayList<String>>());
+                String orgId = organization.get("id").toString();
+                tree.put(orgName, new HashMap<>());
                 orgMap.put(orgName, orgId);
                 logger.info("Organization found in CKAN, now cached (orgName/orgId=\"{}/{}\")", orgName, orgId);
-                
-                // get the packages and populate the packages map
-                JSONArray packages = (JSONArray) result.get("packages");
-                logger.info("Going to populate the packages cache (orgName=\"{}\")", orgName);
-                populatePackagesMap(packages, orgName);
                 return true;
             case 404:
                 return false;

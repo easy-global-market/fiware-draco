@@ -18,10 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Locale;
+import java.util.*;
 
 public class CKANBackend extends HttpBackend {
 
@@ -98,10 +95,11 @@ public class CKANBackend extends HttpBackend {
             throws Exception {
         if (!cache.isCachedOrg(orgName)) {
             logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-
             String orgId = createOrganization(orgName,dcatMetadata);
             cache.addOrg(orgName);
             cache.setOrgId(orgName, orgId);
+            logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
+
             String pkgId = createPackage(pkgName, orgId,dcatMetadata);
             cache.addPkg(orgName, pkgName);
             cache.setPkgId(orgName, pkgName, pkgId);
@@ -159,12 +157,13 @@ public class CKANBackend extends HttpBackend {
     private String resourceLookupOrCreate(String orgName, String pkgName, String resName, boolean createEnabled, DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
         if (!cache.isCachedOrg(orgName)) {
-            logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-
             if (createEnabled) {
+                logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
                 String orgId = createOrganization(orgName,dcatMetadata);
                 cache.addOrg(orgName);
                 cache.setOrgId(orgName, orgId);
+                logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
+
                 String pkgId = createPackage(pkgName, orgId, dcatMetadata);
                 cache.addPkg(orgName, pkgName);
                 cache.setPkgId(orgName, pkgName, pkgId);
@@ -782,45 +781,44 @@ public class CKANBackend extends HttpBackend {
 
 
     /**
-     * Builds an organization name given a fiwareService. It throws an exception if the naming conventions are violated.
-     * @param service
+     * Builds an organization name given an organizationName. It throws an exception if the naming conventions are violated.
+     * @param organizationName
      * @return Organization name
      * @throws Exception
      */
-    public String buildOrgName(String service, String dataModel, boolean enableEncoding, boolean enableLowercase, String ngsiVersion, DCATMetadata dcatMetadata) throws Exception {
-        String orgName="";
-        String fiwareService="";
-        if (dcatMetadata!=null){
-            if (dcatMetadata.getOrganizationName()!=null){
-                fiwareService=(enableLowercase)?service.toLowerCase():dcatMetadata.getOrganizationName();
-            }else{
-                fiwareService=(enableLowercase)?service.toLowerCase():service;
-            }
-        }else{
-            fiwareService=(enableLowercase)?service.toLowerCase():service;
+    public String buildOrgName(String organizationName, String dataModel, boolean enableEncoding, boolean enableLowercase,
+                               String ngsiVersion, DCATMetadata dcatMetadata) throws Exception {
+        String orgName = "";
+        String finalOrganizationName;
+
+        if (enableLowercase) {
+            finalOrganizationName = organizationName.toLowerCase();
+        } else if (dcatMetadata != null && dcatMetadata.getOrganizationName() != null) {
+            finalOrganizationName = dcatMetadata.getOrganizationName();
+        } else {
+            finalOrganizationName = organizationName;
         }
 
-        if ("v2".equals(ngsiVersion)){
+        if ("v2".equals(ngsiVersion)) {
 
-        }
-        else if ("ld".equals(ngsiVersion)) {
+        } else if ("ld".equals(ngsiVersion)) {
             switch (dataModel) {
                 case "db-by-entity-id":
-                    //FIXME
-                    //note that if we enable encode() and/or encodeCKAN() in this datamodel we could have problems, although it need to be analyzed in deep
-                    orgName = NGSICharsets.encodeCKAN(fiwareService);
+                    // FIXME
+                    // note that if we enable encode() and/or encodeCKAN() in this datamodel we
+                    // could have problems, although it need to be analyzed in deep
+                    orgName = NGSICharsets.encodeCKAN(finalOrganizationName);
                     break;
                 case "db-by-entity":
-                    if (enableEncoding) {
-                        orgName = NGSICharsets.encodeCKAN(fiwareService);
-                    } else {
-                        orgName = NGSICharsets.encode(fiwareService, false, true).toLowerCase(Locale.ENGLISH);
-                    } // if else
+                    orgName = enableEncoding
+                            ? NGSICharsets.encodeCKAN(finalOrganizationName)
+                            : NGSICharsets.encode(finalOrganizationName, false, true).toLowerCase(Locale.ENGLISH);
+                    int orgNameLength = orgName.length();
 
-                    if (orgName.length() > NGSIConstants.CKAN_MAX_NAME_LEN) {
+                    if (orgNameLength > NGSIConstants.CKAN_MAX_NAME_LEN) {
                         throw new Exception("Building organization name '" + orgName + "' and its length is "
                                 + "greater than " + NGSIConstants.CKAN_MAX_NAME_LEN);
-                    } else if (orgName.length() < NGSIConstants.CKAN_MIN_NAME_LEN) {
+                    } else if (orgNameLength < NGSIConstants.CKAN_MIN_NAME_LEN) {
                         throw new Exception("Building organization name '" + orgName + "' and its length is "
                                 + "lower than " + NGSIConstants.CKAN_MIN_NAME_LEN);
                     } // if else if
@@ -932,7 +930,6 @@ public class CKANBackend extends HttpBackend {
         }
         return resName;
     } // buildResName
-
 
     public boolean isValid(String test) {
         try {
