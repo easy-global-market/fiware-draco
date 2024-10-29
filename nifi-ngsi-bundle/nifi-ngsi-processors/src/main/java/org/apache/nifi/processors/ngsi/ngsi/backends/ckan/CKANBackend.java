@@ -95,22 +95,11 @@ public class CKANBackend extends HttpBackend {
             throws Exception {
         String orgId;
         if (!cache.isCachedOrg(orgName)) {
-            // Search for organization and add it to cache if found
-            List<Map<String, String>> orgResults = searchOrganizationName(orgName, 1);
-            if (!orgResults.isEmpty()) {
-                orgId = orgResults.get(0).get("id");
-                cache.addOrg(orgName);
-                cache.setOrgId(orgName, orgId);
-
-                logger.info("Found organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
-            } else {
-                logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-
-                orgId = createOrganization(orgName,dcatMetadata);
-                cache.addOrg(orgName);
-                cache.setOrgId(orgName, orgId);
-                logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
-            }
+            logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
+            orgId = createOrganization(orgName,dcatMetadata);
+            cache.addOrg(orgName);
+            cache.setOrgId(orgName, orgId);
+            logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
 
             String pkgId = createPackage(pkgName, orgId,dcatMetadata);
             cache.addPkg(orgName, pkgName);
@@ -171,22 +160,12 @@ public class CKANBackend extends HttpBackend {
         String orgId;
         if (!cache.isCachedOrg(orgName)) {
             if (createEnabled) {
-                // Search for organization and add it to cache if found
-                List<Map<String, String>> orgResults = searchOrganizationName(orgName, 1);
-                if (!orgResults.isEmpty()) {
-                    orgId = orgResults.get(0).get("id");
-                    cache.addOrg(orgName);
-                    cache.setOrgId(orgName, orgId);
+                logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
+                orgId = createOrganization(orgName,dcatMetadata);
+                cache.addOrg(orgName);
+                cache.setOrgId(orgName, orgId);
+                logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
 
-                    logger.info("Found organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
-                } else {
-                    logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-
-                    orgId = createOrganization(orgName,dcatMetadata);
-                    cache.addOrg(orgName);
-                    cache.setOrgId(orgName, orgId);
-                    logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
-                }
                 String pkgId = createPackage(pkgName, orgId, dcatMetadata);
                 cache.addPkg(orgName, pkgName);
                 cache.setPkgId(orgName, pkgName, pkgId);
@@ -953,38 +932,6 @@ public class CKANBackend extends HttpBackend {
         }
         return resName;
     } // buildResName
-
-    public List<Map<String, String>> searchOrganizationName(String query, int limit) throws Exception {
-        String jsonString = String.format("{\"q\": \"%s\", \"limit\": %d}", query, limit);
-
-        String urlPath = "/api/3/action/organization_autocomplete";
-
-        JsonResponse res = doCKANRequest("GET", urlPath, jsonString);
-
-        List<Map<String, String>> organizations = new ArrayList<>();
-
-        if (res.getStatusCode() == 200) {
-            JSONArray results = (JSONArray) res.getJsonObject().get("result");
-
-            for (Object obj : results) {
-                JSONObject orgJson = (JSONObject) obj;
-
-                Map<String, String> orgMap = new HashMap<>();
-                orgMap.put("id", (String) orgJson.get("id"));
-                orgMap.put("name", (String) orgJson.get("name"));
-                orgMap.put("title", (String) orgJson.get("title"));
-
-                organizations.add(orgMap);
-            }
-            logger.info("Successfully retrieved organization names for q=\"{}\"", query);
-
-        } else {
-            throw new Exception("Failed to retrieve organization names (q=" + query
-                    + ", statusCode=" + res.getStatusCode() + ", response=" + res.getJsonObject().toString() + ")");
-        }
-
-        return organizations;
-    }
 
     public boolean isValid(String test) {
         try {

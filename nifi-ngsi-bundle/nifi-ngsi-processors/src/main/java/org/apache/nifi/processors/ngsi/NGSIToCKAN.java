@@ -264,7 +264,7 @@ public class NGSIToCKAN extends AbstractProcessor {
         final NGSIEvent event=n.getEventFromFlowFile(flowFile,session,ngsiVersion);
         final long creationTime = event.getCreationTime();
         final String fiwareService = (event.getFiwareService().compareToIgnoreCase("nd")==0)?context.getProperty(DEFAULT_SERVICE).getValue():event.getFiwareService();
-        final String organizationName = flowFile.getAttribute("CKAN-OrganizationId");
+        final String organizationName = flowFile.getAttribute("X-CKAN-OrganizationName");
         final String fiwareServicePath = ("ld".equals(context.getProperty(NGSI_VERSION).getValue()))?"":(event.getFiwareServicePath().compareToIgnoreCase("/nd")==0)?context.getProperty(DEFAULT_SERVICE_PATH).getValue():event.getFiwareServicePath();
         CKANAggregator aggregator = new CKANAggregator() {
             @Override
