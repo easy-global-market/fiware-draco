@@ -152,12 +152,11 @@ public class CKANCache extends HttpBackend {
         logger.info("Organization not found in the cache, querying CKAN for it (orgName=\"{}\")", orgName);
         
         // query CKAN for the organization information
-        String ckanURL = "/api/3/action/organization_autocomplete";
-        String jsonString = String.format("{\"q\":\"%s\"}", orgName);
+        String ckanURL = "/api/3/action/organization_autocomplete?q=" + orgName;
 
         ArrayList<Header> headers = new ArrayList<>();
         headers.add(new BasicHeader("Authorization", apiKey));
-        JsonResponse res = doRequest("GET", ckanURL, true, headers, new StringEntity(jsonString, "UTF-8"));
+        JsonResponse res = doRequest("GET", ckanURL, true, headers, null);
 
         switch (res.getStatusCode()) {
             case 200:
