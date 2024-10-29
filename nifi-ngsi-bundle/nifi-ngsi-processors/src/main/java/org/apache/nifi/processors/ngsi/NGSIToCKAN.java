@@ -264,6 +264,7 @@ public class NGSIToCKAN extends AbstractProcessor {
         final NGSIEvent event=n.getEventFromFlowFile(flowFile,session,ngsiVersion);
         final long creationTime = event.getCreationTime();
         final String fiwareService = (event.getFiwareService().compareToIgnoreCase("nd")==0)?context.getProperty(DEFAULT_SERVICE).getValue():event.getFiwareService();
+        final String organizationName = flowFile.getAttribute("CKAN-OrganizationId");
         final String fiwareServicePath = ("ld".equals(context.getProperty(NGSI_VERSION).getValue()))?"":(event.getFiwareServicePath().compareToIgnoreCase("/nd")==0)?context.getProperty(DEFAULT_SERVICE_PATH).getValue():event.getFiwareServicePath();
         CKANAggregator aggregator = new CKANAggregator() {
             @Override
@@ -274,7 +275,7 @@ public class NGSIToCKAN extends AbstractProcessor {
         aggregator = aggregator.getAggregator(("row".equals(attrPersistence))?true:false);
         try {
 
-            final String orgName = ckanBackend.buildOrgName(fiwareService,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
+            final String orgName = ckanBackend.buildOrgName(organizationName,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
             ArrayList<Entity> entities= new ArrayList<>();
             entities = ("ld".equals(context.getProperty(NGSI_VERSION).getValue()))?event.getEntitiesLD():event.getEntities();
             getLogger().info("[] Persisting data at NGSICKANSink (orgName=" + orgName+ ", ");
