@@ -93,10 +93,9 @@ public class CKANBackend extends HttpBackend {
      */
     private String resourceLookupOrCreateDynamicFields(String orgName, String pkgName, String resName, String records,DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
-        String orgId;
         if (!cache.isCachedOrg(orgName)) {
             logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-            orgId = createOrganization(orgName,dcatMetadata);
+            String orgId = createOrganization(orgName,dcatMetadata);
             cache.addOrg(orgName);
             cache.setOrgId(orgName, orgId);
             logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
@@ -157,11 +156,10 @@ public class CKANBackend extends HttpBackend {
 
     private String resourceLookupOrCreate(String orgName, String pkgName, String resName, boolean createEnabled, DCATMetadata dcatMetadata, boolean createDataStore)
             throws Exception {
-        String orgId;
         if (!cache.isCachedOrg(orgName)) {
             if (createEnabled) {
                 logger.info("The organization was not cached nor existed in CKAN (orgName=\"{}\")", orgName);
-                orgId = createOrganization(orgName,dcatMetadata);
+                String orgId = createOrganization(orgName,dcatMetadata);
                 cache.addOrg(orgName);
                 cache.setOrgId(orgName, orgId);
                 logger.info("Created new organization in CKAN (orgName=\"{}\", orgId=\"{}\")", orgName, orgId);
