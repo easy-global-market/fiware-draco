@@ -5,6 +5,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 @SupportsBatching
@@ -208,6 +210,7 @@ public class NGSIToCKAN extends AbstractProcessor {
                     + "such as an invalid query or an integrity constraint violation")
             .build();
 
+    private final AtomicReference<CKANBackend> ckanBackendAtomicReference = new AtomicReference<>();
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         final List<PropertyDescriptor> properties = new ArrayList<>();
@@ -240,22 +243,28 @@ public class NGSIToCKAN extends AbstractProcessor {
         rels.add(REL_FAILURE);
         return rels;
     }
-
-    protected void persistFlowFile(final ProcessContext context, final FlowFile flowFile, ProcessSession session) throws Exception {
-
+    @OnScheduled
+    public void setUpCKANBackend(final ProcessContext context) {
         final String[] host = {context.getProperty(CKAN_HOST).getValue()};
         final String port = context.getProperty(CKAN_PORT).getValue();
         final String apiKey = context.getProperty(CKAN_API_KEY).getValue();
         final String ckanViewer = context.getProperty(CKAN_VIEWER).getValue();
-        final String orioUrl = context.getProperty(ORION_URL).getValue();
+        final String orionUrl = context.getProperty(ORION_URL).getValue();
         final boolean ssl = context.getProperty(SSL).asBoolean();
         final int maxConnections = context.getProperty(MAX_CONNECTIONS).asInteger();
         final int maxConnectionsPerRoute = context.getProperty(MAX_CONNECTIONS_PER_ROUTE).asInteger();
+        CKANBackend ckanBackend = new CKANBackend(apiKey, host, port, orionUrl, ssl, maxConnections, maxConnectionsPerRoute, ckanViewer);
+        ckanBackendAtomicReference.set(ckanBackend);
+        getLogger().info("CKAN backend initialized with host: {}, port: {}, ssl: {}", host[0], port, ssl);
+
+    }
+    protected void persistFlowFile(final ProcessContext context, final FlowFile flowFile, ProcessSession session, CKANBackend ckanBackend) throws Exception {
+
+
         final boolean enableEncoding = context.getProperty(ENABLE_ENCODING).asBoolean();
         final boolean enableLowercase = context.getProperty(ENABLE_LOWERCASE).asBoolean();
         final boolean createDataStore = context.getProperty(CREATE_DATASTORE).asBoolean();
         final String attrPersistence = context.getProperty(ATTR_PERSISTENCE).getValue();
-        final CKANBackend ckanBackend = new CKANBackend(apiKey,host,port,orioUrl,ssl,maxConnections,maxConnectionsPerRoute,ckanViewer);
         final NGSIUtils n = new NGSIUtils();
         final BuildDCATMetadata buildDCATMetadata = new BuildDCATMetadata();
         final DCATMetadata dcatMetadata= buildDCATMetadata.getMetadataFromFlowFile(flowFile,session);
@@ -321,6 +330,7 @@ public class NGSIToCKAN extends AbstractProcessor {
 
     @Override
     public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
+        CKANBackend ckanBackend = ckanBackendAtomicReference.get();
         final FlowFile flowFile = session.get();
         if (flowFile == null) {
             return;
@@ -329,7 +339,7 @@ public class NGSIToCKAN extends AbstractProcessor {
         final ComponentLog logger = getLogger();
 
         try {
-            persistFlowFile(context, flowFile, session);
+            persistFlowFile(context, flowFile, session, ckanBackend);
             logger.info("inserted {} into CKAN", new Object[]{flowFile});
             session.getProvenanceReporter().send(flowFile, "report");
             session.transfer(flowFile, REL_SUCCESS);
