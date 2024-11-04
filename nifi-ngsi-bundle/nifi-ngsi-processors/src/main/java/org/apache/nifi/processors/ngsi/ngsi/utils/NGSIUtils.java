@@ -9,11 +9,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.collections.map.CaseInsensitiveMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class NGSIUtils {
@@ -21,6 +21,7 @@ public class NGSIUtils {
     public NGSIEvent getEventFromFlowFile(FlowFile flowFile, final ProcessSession session, String version){
 
         final byte[] buffer = new byte[(int) flowFile.getSize()];
+        final Logger logger = LoggerFactory.getLogger(NGSIUtils.class);
 
         session.read(flowFile, new InputStreamCallback() {
             @Override
@@ -100,35 +101,57 @@ public class NGSIUtils {
                             attrValue = value.get("object").toString();
                         }else if ("Property".contentEquals(attrType)){
                             attrValue = value.get("value").toString();
-                            Iterator<String> keysOneLevel = value.keys();
-                            while (keysOneLevel.hasNext()) {
-                                String keyOne = keysOneLevel.next();
-                                if ("type".equals(keyOne)){
-                                    // Do Nothing
-                                } else if ("observedAt".equals(keyOne) || "unitCode".equals(keyOne)){
-                                    // TBD Do Something for unitCode and observedAt
-                                    String value2 = value.getString(keyOne);
-                                    subAttrName = keyOne;
-                                    subAttrValue = value2;
-                                    hasSubAttrs = true;
-                                    subAttributes.add(new AttributesLD(subAttrName,subAttrValue,subAttrValue,false,null));
-                                } else if (!"value".equals(keyOne)){
-                                    JSONObject value2 = value.getJSONObject(keyOne);
-                                    subAttrName=keyOne;
-                                    subAttrType=value2.get("type").toString();
-                                    if ("Relationship".contentEquals(subAttrType)){
-                                        subAttrValue = value2.get("object").toString();
-                                    }else if ("Property".contentEquals(subAttrType)){
-                                        subAttrValue = value2.get("value").toString();
-                                    }else if ("GeoProperty".contentEquals(subAttrType)){
-                                        subAttrValue = value2.get("value").toString();
-                                    }
-                                    hasSubAttrs= true;
-                                    subAttributes.add(new AttributesLD(subAttrName,subAttrType,subAttrValue,false,null));
-                                }
-                            }
+
                         }else if ("GeoProperty".contentEquals(attrType)){
                             attrValue = value.get("value").toString();
+                        }
+                        Iterator<String> keysOneLevel = value.keys();
+                        while (keysOneLevel.hasNext()) {
+                            String keyOne = keysOneLevel.next();
+                            if ("type".equals(keyOne)){
+                                // Do Nothing
+                            } else if ("observedAt".equals(keyOne) || "unitCode".equals(keyOne)){
+                                // TBD Do Something for unitCode and observedAt
+                                String value2 = value.getString(keyOne);
+                                subAttrName = keyOne;
+                                subAttrValue = value2;
+                                hasSubAttrs = true;
+                                subAttributes.add(new AttributesLD(subAttrName,subAttrValue,subAttrValue,false,null));
+                            } else if (!"value".equals(keyOne)){
+                                JSONObject value2 = value.getJSONObject(keyOne);
+                                subAttrName=keyOne;
+                                subAttrType=value2.get("type").toString();
+                                if ("Relationship".contentEquals(subAttrType)){
+                                    subAttrValue = value2.get("object").toString();
+                                }else if ("Property".contentEquals(subAttrType)){
+                                    subAttrValue = value2.get("value").toString();
+                                }else if ("GeoProperty".contentEquals(subAttrType)){
+                                    subAttrValue = value2.get("value").toString();
+                                } else if ("RelationshipDetails".contains(keyOne)) {
+                                    value2.remove("id");
+                                    value2.remove("type");
+
+                                    for (String relationKey : value2.keySet()) {
+                                        Object object = value2.get(relationKey);
+                                        if (object instanceof JSONArray) {
+                                            // it is a multi-attribute (see section 4.5.5 in NGSI-LD specification)
+                                            JSONArray valuesArray = value2.getJSONArray(relationKey);
+                                            for (int j = 0; j < valuesArray.length(); j++) {
+                                                JSONObject valueObject = valuesArray.getJSONObject(j);
+                                                AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, valueObject);
+                                                addAttributeIfValid(subAttributes, subAttribute);
+                                            }
+                                        } else if (object instanceof JSONObject) {
+                                            AttributesLD subAttribute = parseNgsiLdSubAttribute(relationKey, (JSONObject) object);
+                                            addAttributeIfValid(subAttributes, subAttribute);
+                                        } else {
+                                            logger.info("Sub Attribute {} has unexpected value type: {}", relationKey, object.getClass());
+                                        }
+                                    }
+                                }
+                                hasSubAttrs= true;
+                                subAttributes.add(new AttributesLD(subAttrName,subAttrType,subAttrValue,false,null));
+                            }
                         }
                         attributes.add(new AttributesLD(key,attrType,attrValue, hasSubAttrs,subAttributes));
                         subAttributes=new ArrayList<>();
@@ -140,5 +163,30 @@ public class NGSIUtils {
             event = new NGSIEvent(creationTime,fiwareService,entities);
         }
         return event;
+    }
+
+    private AttributesLD parseNgsiLdSubAttribute(String key, JSONObject value) {
+        String subAttrType = value.get("type").toString();
+        String subAttrValue = "";
+        if ("Relationship".contentEquals(subAttrType)) {
+            subAttrValue = value.get("object").toString();
+        } else if ("Property".contentEquals(subAttrType)) {
+            subAttrValue = value.get("value").toString();
+        } else if ("GeoProperty".contentEquals(subAttrType)) {
+            subAttrValue = value.get("value").toString();
+        }
+
+        return new AttributesLD(key.toLowerCase(), subAttrType, subAttrValue, false, null);
+    }
+
+    // When this processor is used in a flow with a `Join Enrichment` processor, it harmonizes JSON among all processed entities,
+    // for instance adding attributes which are not present by default in an entity.
+    // In this case, these attributes are null or can have a null value.
+    // So we filter out attributes that contain a null value or whose whole value is null
+    private void addAttributeIfValid(List<AttributesLD> attributes, AttributesLD attribute) {
+        if (attribute != null &&
+                attribute.getAttrValue() != null &&
+                !Objects.equals(attribute.getAttrValue().toString(), "null"))
+            attributes.add(attribute);
     }
 }

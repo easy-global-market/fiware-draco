@@ -272,7 +272,6 @@ public class NGSIToCKAN extends AbstractProcessor {
         final String dataModel=context.getProperty(DATA_MODEL).getValue();
         final NGSIEvent event=n.getEventFromFlowFile(flowFile,session,ngsiVersion);
         final long creationTime = event.getCreationTime();
-        final String fiwareService = (event.getFiwareService().compareToIgnoreCase("nd")==0)?context.getProperty(DEFAULT_SERVICE).getValue():event.getFiwareService();
         final String organizationName = flowFile.getAttribute("X-CKAN-OrganizationName");
         final String fiwareServicePath = ("ld".equals(context.getProperty(NGSI_VERSION).getValue()))?"":(event.getFiwareServicePath().compareToIgnoreCase("/nd")==0)?context.getProperty(DEFAULT_SERVICE_PATH).getValue():event.getFiwareServicePath();
         CKANAggregator aggregator = new CKANAggregator() {
@@ -291,7 +290,8 @@ public class NGSIToCKAN extends AbstractProcessor {
             getLogger().debug("DCAT metadata: {}" , dcatMetadata);
 
             for (Entity entity : entities) {
-                final String pkgName = ckanBackend.buildPkgName(fiwareService,entity,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
+                final String pkgName = ckanBackend.buildPkgName(entity,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
+                final String pkgDescription = ckanBackend.getDataFromRelationshipDetails(entity, "description");
                 final String resName = ckanBackend.buildResName(entity,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
                 aggregator.initialize(entity,context.getProperty(NGSI_VERSION).getValue());
                 aggregator.aggregate(entity, creationTime, context.getProperty(NGSI_VERSION).getValue());
@@ -313,9 +313,9 @@ public class NGSIToCKAN extends AbstractProcessor {
                 // Do try-catch only for metrics gathering purposes... after that, re-throw
                 try {
                     if (aggregator instanceof CKANAggregator.RowAggregator) {
-                        ckanBackend.persist(orgName, pkgName, resName, aggregation, true, dcatMetadata,createDataStore);
+                        ckanBackend.persist(orgName, pkgName, pkgDescription,  resName, aggregation, true, dcatMetadata,createDataStore);
                     } else {
-                        ckanBackend.persist(orgName, pkgName, resName, aggregation, false, dcatMetadata,createDataStore);
+                        ckanBackend.persist(orgName, pkgName, pkgDescription, resName, aggregation,  false, dcatMetadata,createDataStore);
                     } // if else
 
                 } catch (Exception e) {
