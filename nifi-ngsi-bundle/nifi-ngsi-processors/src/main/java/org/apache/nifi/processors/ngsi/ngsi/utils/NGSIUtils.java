@@ -110,8 +110,8 @@ public class NGSIUtils {
                             String keyOne = keysOneLevel.next();
                             if ("type".equals(keyOne)){
                                 // Do Nothing
-                            } else if ("observedAt".equals(keyOne) || "unitCode".equals(keyOne)){
-                                // TBD Do Something for unitCode and observedAt
+                            } else if ("observedAt".equals(keyOne) || "unitCode".equals(keyOne) || "object".equals(keyOne)){
+                                // TBD Do Something for unitCode , observedAt and object
                                 String value2 = value.getString(keyOne);
                                 subAttrName = keyOne;
                                 subAttrValue = value2;
