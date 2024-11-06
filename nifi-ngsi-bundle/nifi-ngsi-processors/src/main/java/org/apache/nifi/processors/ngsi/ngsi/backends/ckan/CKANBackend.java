@@ -310,7 +310,7 @@ public class CKANBackend extends HttpBackend {
         JsonObject dataJson = new JsonObject();
         dataJson.addProperty("name",pkgName);
         dataJson.addProperty("owner_org",orgId);
-        dataJson.addProperty("title", NGSIEncoders.encodePostgreSQL(pkgTitle));
+        dataJson.addProperty("title", pkgTitle);
         if (dcatMetadata!=null){
             dataJson.addProperty("notes",dcatMetadata.getPackageDescription());
             dataJson.addProperty("version",dcatMetadata.getVersion());
@@ -939,25 +939,4 @@ public class CKANBackend extends HttpBackend {
         }
         return true;
     }
-
-    public String getDataFromRelationshipDetails(Entity entity, String data) {
-        ArrayList<AttributesLD> entityAttributes = entity.getEntityAttrsLD();
-        for(AttributesLD attr : entityAttributes) {
-            if("servesDataset".contentEquals(attr.getAttrName())) {
-                for(AttributesLD subAttr : attr.getSubAttrs()) {
-                    if ("RelationshipDetails".equals(subAttr.getAttrName())) {
-                        for (AttributesLD nestedSubAttr : subAttr.getSubAttrs()) {
-                            if (data.equals(nestedSubAttr.getAttrName())) {
-                                return nestedSubAttr.getAttrValue();
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        return null;
-    }
-
 }

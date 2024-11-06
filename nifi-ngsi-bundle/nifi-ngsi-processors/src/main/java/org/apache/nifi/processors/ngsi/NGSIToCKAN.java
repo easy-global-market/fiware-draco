@@ -280,7 +280,7 @@ public class NGSIToCKAN extends AbstractProcessor {
             getLogger().debug("DCAT metadata: {}" , dcatMetadata);
 
             for (Entity entity : entities) {
-                final String pkgTitle = ckanBackend.getDataFromRelationshipDetails(entity, "title");
+                final String pkgTitle = n.getDataFromRelationshipDetails(entity, "title");
                 final String pkgName = ckanBackend.buildPkgName(entity,pkgTitle,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
                 final String resName = ckanBackend.buildResName(entity,dataModel,enableEncoding,enableLowercase,ngsiVersion,dcatMetadata);
                 aggregator.initialize(entity,context.getProperty(NGSI_VERSION).getValue());
